@@ -25,7 +25,14 @@ class GitHub_Updater {
 
     private function get_repo_release_info() {
         if (is_null($this->github_api_result)) {
-            $request = wp_remote_get("{$this->github_url}/releases/latest");
+            // Convertir la URL de GitHub en la de la API
+            $api_url = str_replace('https://github.com/', 'https://api.github.com/repos/', $this->github_url);
+            $api_url .= '/releases/latest';
+
+            $request = wp_remote_get($api_url, array(
+                'headers' => array('User-Agent' => 'WordPress/' . get_bloginfo('version'))
+            ));
+
             if (!is_wp_error($request) && $request['response']['code'] === 200) {
                 $this->github_api_result = json_decode($request['body']);
             }
@@ -38,7 +45,7 @@ class GitHub_Updater {
 
         $release_info = $this->get_repo_release_info();
         if ($release_info) {
-            $new_version = $release_info->tag_name; // ejemplo: v1.0.1
+            $new_version = ltrim($release_info->tag_name, 'v');
             if (version_compare($this->plugin["Version"], $new_version, '<')) {
                 $plugin_info = array(
                     "slug"        => $this->basename,
