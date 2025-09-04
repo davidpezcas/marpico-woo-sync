@@ -4,7 +4,8 @@
  * Description: Sincroniza productos y categorías desde la API de Marpico hacia WooCommerce.
  * Version: 1.0.0
  * Author: David Perez
- * Plugin URI:  https://github.com/usuario/marpico-woo-sync
+ * Author URI:  https://impactosdigitales.co
+ * Plugin URI:  https://github.com/davidpezcas/marpico-woo-sync
  * Text Domain: marpico-woo-sync
  */
 
@@ -23,7 +24,7 @@ if ( is_admin() ) {
     require_once MARPICO_WOO_SYNC_PATH . 'includes/github-updater.php';
 
     // Conectar el plugin a GitHub
-    $repo_url = 'https://api.github.com/repos/usuario/marpico-woo-sync';
+    $repo_url = 'https://github.com/davidpezcas/marpico-woo-sync';
     new GitHub_Updater(__FILE__, $repo_url);
 }
 
