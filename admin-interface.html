@@ -1,0 +1,302 @@
+<!-- Development version -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<!-- Production version -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<!-- Creando interfaz moderna con sidebar inspirada en dashboards de productividad -->
+<div class="marpico-admin-container">
+    <!-- Sidebar moderno -->
+    <div class="marpico-sidebar">
+        <div class="marpico-sidebar-header">
+            <h1 class="marpico-sidebar-title">
+                <span class="marpico-nav-icon">
+                  <i data-lucide="square-chart-gantt"></i>
+                </span>
+                Marpico Sync
+            </h1>
+            <p class="marpico-sidebar-subtitle">Sincronización de productos</p>
+            <span class="marpico-sidebar-subtitle">By David Perez</span>
+        </div>
+
+        <nav>
+            <div class="marpico-nav-section">
+                <h3 class="marpico-nav-section-title">
+                  <span class="marpico-nav-title-icon">
+                    <i data-lucide="layout-dashboard"></i>
+                  </span>
+                  Dashboard
+                </h3>
+                <a href="#overview" class="marpico-nav-item active" data-section="overview">
+                    <span class="marpico-nav-icon">
+                      <i data-lucide="folder-sync"></i>
+                    </span>
+                    Resumen General
+                </a>
+                <a href="#stats" class="marpico-nav-item" data-section="stats">
+                    <span class="marpico-nav-icon">
+                      <i data-lucide="chart-no-axes-column"></i>
+                    </span>
+                    Estadísticas
+                </a>
+            </div>
+
+            <div class="marpico-nav-section">
+                <h3 class="marpico-nav-section-title">
+                  <span class="marpico-nav-title-icon">
+                    <i data-lucide="settings"></i> 
+                  </span>
+                  Configuración
+                </h3>
+                <a href="#api-config" class="marpico-nav-item" data-section="api-config">
+                    <span class="marpico-nav-icon">
+                      <i data-lucide="code-xml"></i>
+                    </span>
+                    Configuracion de API
+                </a>
+                <a href="#sync-options" class="marpico-nav-item" data-section="sync-options">
+                    <span class="marpico-nav-icon">
+                      <i data-lucide="refresh-ccw"></i>
+                    </span>
+                    Opciones de Sincronizacion
+                </a>
+            </div>
+
+            <div class="marpico-nav-section">
+                <h3 class="marpico-nav-section-title">
+                  <span class="marpico-nav-title-icon">
+                    <i data-lucide="square-dashed-mouse-pointer"></i> 
+                  </span>
+                  Herramientas
+                </h3>
+                <a href="#batch-sync" class="marpico-nav-item" data-section="batch-sync">
+                    <span class="marpico-nav-icon">
+                      <i data-lucide="package"></i>
+                    </span>
+                    Sync por Lotes
+                </a>
+                <a href="#individual-sync" class="marpico-nav-item" data-section="individual-sync">
+                    <span class="marpico-nav-icon">
+                      <i data-lucide="database-zap"></i>
+                    </span>
+                    Sync Individual
+                </a>
+                <a href="#logs" class="marpico-nav-item" data-section="logs">
+                    <span class="marpico-nav-icon">
+                      <i data-lucide="logs"></i>
+                    </span>
+                    Registro de Actividad
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="marpico-main-content">
+        <!-- Header del contenido -->
+        <div class="marpico-content-header">
+            <h1 class="marpico-content-title">Dashboard</h1>
+            <p class="marpico-content-subtitle">Gestiona la sincronización de productos entre tu API externa y WooCommerce</p>
+        </div>
+
+        <!-- Sección: Resumen General -->
+        <div id="section-overview" class="marpico-content-section">
+            <div class="marpico-card">
+                <div class="marpico-card-header">
+                    <h2 class="marpico-card-title">
+                        <span class="marpico-card-icon">
+                          <i data-lucide="chart-no-axes-column"></i>
+                        </span>
+                        Estadísticas
+                    </h2>
+                </div>
+                <div class="marpico-stats-grid">
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Configuración API -->
+        <div id="section-api-config" class="marpico-content-section" style="display: none;">
+            <div class="marpico-card">
+                <div class="marpico-card-header">
+                    <h2 class="marpico-card-title">
+                        <span class="marpico-card-icon"></span>
+                        Configuración de API
+                    </h2>
+                </div>
+                <form method="post" action="options.php">
+                    <?php settings_fields('marpico_sync_settings'); ?>
+                    <div class="marpico-form-group">
+                        <label class="marpico-label" for="marpico_api_endpoint">API Endpoint</label>
+                        <input type="url" id="marpico_api_endpoint" name="marpico_api_endpoint" class="marpico-input" 
+                               value="<?php echo esc_attr(get_option('marpico_api_endpoint', 'https://apipromocionales.marpico.co/api/inventarios')); ?>" 
+                               placeholder="https://api.ejemplo.com/productos">
+                    </div>
+                    <div class="marpico-form-group">
+                        <label class="marpico-label" for="marpico_api_token">API Token (Api-Key)</label>
+                        <input type="password" id="marpico_api_token" name="marpico_api_token" class="marpico-input" 
+                               value="<?php echo esc_attr(get_option('marpico_api_token', '')); ?>" 
+                               placeholder="Ingrese su token de API">
+                    </div>
+                    <?php submit_button('Guardar Configuración', 'primary', 'submit', false, ['class' => 'marpico-btn marpico-btn-primary']); ?>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sección: Opciones de Sincronización -->
+        <div id="section-sync-options" class="marpico-content-section" style="display: none;">
+            <div class="marpico-card">
+                <div class="marpico-card-header">
+                    <h2 class="marpico-card-title">
+                        <span class="marpico-card-icon"></span>
+                        Opciones de Sincronización
+                    </h2>
+                </div>
+                <div class="marpico-sync-options">
+                    <div class="marpico-sync-option active" data-mode="batch">
+                        <h3>Sincronización por Lotes</h3>
+                        <p>Sincroniza todos los productos de la API en lotes de 20 productos. Ideal para sincronización completa.</p>
+                    </div>
+                    <div class="marpico-sync-option" data-mode="individual">
+                        <h3>Producto Individual</h3>
+                        <p>Sincroniza un producto específico usando su código de familia. Perfecto para actualizaciones puntuales.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Sincronización por Lotes -->
+        <div id="section-batch-sync" class="marpico-content-section" style="display: none;">
+            <div class="marpico-card">
+                <div class="marpico-card-header">
+                    <h2 class="marpico-card-title">
+                        <span class="marpico-card-icon"></span>
+                        Sincronización por Lotes
+                    </h2>
+                </div>
+                <p>Este proceso sincronizará todos los productos disponibles en la API externa con tu tienda WooCommerce en lotes de 20 productos.</p>
+                <button id="sync-products-batch" class="marpico-btn marpico-btn-primary">
+                    Iniciar Sincronización por Lotes
+                </button>
+                <div id="marpico-sync-status-batch" style="margin-top: 24px;"></div>
+            </div>
+        </div>
+
+        <!-- Sección: Sincronización Individual -->
+        <div id="section-individual-sync" class="marpico-content-section" style="display: none;">
+            <div class="marpico-card">
+                <div class="marpico-card-header">
+                    <h2 class="marpico-card-title">
+                        <span class="marpico-card-icon"></span>
+                        Sincronización Individual
+                    </h2>
+                </div>
+                <p>Sincroniza un producto específico usando su código de familia. Perfecto para actualizaciones puntuales.</p>
+                <div class="marpico-form-group">
+                    <label class="marpico-label" for="product-code-input">Código de Producto</label>
+                    <input type="text" id="product-code-input" class="marpico-input" 
+                           placeholder="Ej: VI2094">
+                </div>
+                <button id="sync-individual-product" class="marpico-btn marpico-btn-secondary">
+                    Sincronizar Producto
+                </button>
+                <div id="individual-sync-status" style="margin-top: 24px;"></div>
+            </div>
+        </div>
+
+        <!-- Sección: Logs -->
+        <div id="section-logs" class="marpico-content-section" style="display: none;">
+            <div class="marpico-card">
+                <div class="marpico-card-header">
+                    <h2 class="marpico-card-title">
+                        <span class="marpico-card-icon"></span>
+                        Registro de Actividad
+                    </h2>
+                </div>
+                <div class="marpico-logs" id="marpico-logs-container">
+                    <?php
+                    $logs = get_option('marpico_sync_log', []);
+                    if (empty($logs)) {
+                        echo '<div class="marpico-log-entry marpico-log-info">';
+                        echo '<span class="marpico-log-timestamp">[' . current_time('Y-m-d H:i:s') . ']</span>';
+                        echo '<span class="marpico-log-message">No hay registros disponibles</span>';
+                        echo '</div>';
+                    } else {
+                        foreach (array_slice($logs, 0, 20) as $log) {
+                            $log_class = 'marpico-log-info';
+                            if (strpos($log, '✓') !== false || strpos($log, 'exitosamente') !== false) {
+                                $log_class = 'marpico-log-success';
+                            } elseif (strpos($log, 'Error') !== false || strpos($log, 'error') !== false) {
+                                $log_class = 'marpico-log-error';
+                            }
+                            
+                            // Extraer timestamp si existe
+                            preg_match('/\[(.*?)\](.*)/', $log, $matches);
+                            if (count($matches) >= 3) {
+                                echo '<div class="marpico-log-entry ' . $log_class . '">';
+                                echo '<span class="marpico-log-timestamp">[' . esc_html($matches[1]) . ']</span>';
+                                echo '<span class="marpico-log-message">' . esc_html(trim($matches[2])) . '</span>';
+                                echo '</div>';
+                            } else {
+                                echo '<div class="marpico-log-entry ' . $log_class . '">';
+                                echo '<span class="marpico-log-message">' . esc_html($log) . '</span>';
+                                echo '</div>';
+                            }
+                        }
+                    }
+                    ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script de navegación y funcionalidad -->
+<script>
+jQuery(document).ready(function($) {
+    // Navegación del sidebar
+    $('.marpico-nav-item').on('click', function(e) {
+        e.preventDefault();
+        
+        // Remover clase active de todos los items
+        $('.marpico-nav-item').removeClass('active');
+        $(this).addClass('active');
+        
+        // Ocultar todas las secciones
+        $('.marpico-content-section').hide();
+        
+        // Mostrar la sección seleccionada
+        const section = $(this).data('section');
+        $('#section-' + section).show();
+    });
+    
+    // Cargar estadísticas al iniciar
+    loadSystemStats();
+    
+    function loadSystemStats() {
+        $.post(marpico_ajax.ajax_url, {
+            action: 'marpico_get_sync_stats',
+            security: marpico_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                $('#total-products-stat').text(response.data.total_products);
+                $('#last-sync-stat').text(response.data.last_sync);
+                $('#sync-errors-stat').text(response.data.sync_errors);
+                $('#api-status-stat').text(response.data.api_status);
+            }
+        });
+    }
+    
+    // Actualizar estadísticas cada 30 segundos
+    setInterval(loadSystemStats, 30000);
+});
+</script>
+<script>
+    lucide.createIcons({
+      attrs: {
+        'stroke-width': 1.5
+      },
+      nameAttr: 'data-lucide', // attribute for the icon name.
+    });
+  </script>
