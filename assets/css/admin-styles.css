@@ -63,14 +63,31 @@
 
 .marpico-sidebar-subtitle {
   font-size: 0.875rem;
+  font-weight: 400;
   color: var(--marpico-text-muted);
-  margin: 4px 0 0 0;
+  margin: 0;
 }
 
 .marpico-nav-section {
   margin-bottom: 20px;
 }
-
+.marpico-autor {
+  padding: 20px;
+  display: block;
+}
+.version-marpico-woo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+span.marpico-version-autor {
+  font-size: 14px;
+  color: #0058ff;
+}
+span.marpico-version-text {
+  font-size: 12px;
+  color: #c1c1c1;
+}
 .marpico-nav-section-title {
   font-size: 0.7rem;
   font-weight: 400;
@@ -115,7 +132,9 @@ a.marpico-nav-item:focus {
   box-shadow: none;
   outline: none;
 }
-
+span.marpico-nav-img img {
+  width: 40px;
+}
 .marpico-nav-icon {
   width: 16px;
   height: 16px;
@@ -331,12 +350,13 @@ a.marpico-nav-item:focus {
 
 /* Botones modernos mejorados */
 .marpico-btn {
-  padding: 14px 28px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
+  padding: 14px 28px !important;
+  border: none !important;
+  line-height: 20px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  cursor: pointer !important;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
@@ -371,8 +391,8 @@ a.marpico-nav-item:focus {
     135deg,
     var(--marpico-accent) 0%,
     var(--marpico-accent-light) 100%
-  );
-  color: white;
+  ) !important;
+  color: white !important;
   box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.3);
 }
 
