@@ -50,14 +50,14 @@
                     <span class="marpico-nav-icon">
                       <i data-lucide="code-xml"></i>
                     </span>
-                    Configuracion de API
+                    Configuración de API
                 </a>
-                <!-- <a href="#sync-options" class="marpico-nav-item" data-section="sync-options">
+                <a href="#specify-products" class="marpico-nav-item" data-section="specify-products">
                     <span class="marpico-nav-icon">
-                      <i data-lucide="refresh-ccw"></i>
+                      <i data-lucide="scan-barcode"></i>
                     </span>
-                    Opciones de Sincronizacion
-                </a> -->
+                    Especificaciones Producto
+                </a>
             </div>
 
             <div class="marpico-nav-section">
@@ -150,27 +150,51 @@
             </div>
         </div>
 
-        <!-- Sección: Opciones de Sincronización -->
-        <div id="section-sync-options" class="marpico-content-section" style="display: none;">
+        <!-- Sección: Especificaciones Producto -->
+        <div id="section-specify-products" class="marpico-content-section" style="display: none;">
             <div class="marpico-card">
                 <div class="marpico-card-header">
                     <h2 class="marpico-card-title">
                         <span class="marpico-card-icon">
-                            <i data-lucide="refresh-ccw"></i>
+                            <i data-lucide="scan-barcode"></i>
                         </span>
-                        Opciones de Sincronización
+                        Especificaciones Producto
                     </h2>
                 </div>
                 <div class="marpico-sync-options">
-                    <div class="marpico-sync-option active" data-mode="batch">
-                        <h3>Sincronización por Lotes</h3>
-                        <p>Sincroniza todos los productos de la API en lotes de 20 productos. Ideal para sincronización completa.</p>
+                    <div class="marpico-specify-products">
+                        <h3>Creación de Campos Personalizados</h3>
+                        <p>Añade estos <strong>meta keys</strong> para cada producto sincronizado:</p>
+
+                        <ul style="margin:0; padding-left:20px; line-height:1.6;">
+                        <li><code>_marpico_material</code> — Material del producto.</li>
+                        <li><code>_marpico_empaque_individual</code> — Empaque individual.</li>
+                        <li><code>_marpico_empaque_unds_caja</code> — Unidades por caja.</li>
+                        <li><code>_marpico_empaque_unds_medida</code> — Medida de las unidades.</li>
+                        <li><code>_marpico_empaque_largo</code> — Largo del empaque.</li>
+                        <li><code>_marpico_empaque_ancho</code> — Ancho del empaque.</li>
+                        <li><code>_marpico_empaque_alto</code> — Alto del empaque.</li>
+                        <li><code>_marpico_empaque_peso_neto</code> — Peso neto.</li>
+                        <li><code>_marpico_empaque_peso_bruto</code> — Peso bruto.</li>
+                        <li><code>_marpico_area_impresion</code> — Área de impresión.</li>
+                        <li><code>_marpico_medidas_largo</code> — Medida largo.</li>
+                        <li><code>_marpico_medidas_ancho</code> — Medida ancho.</li>
+                        <li><code>_marpico_medidas_alto</code> — Medida alto.</li>
+                        <li><code>_marpico_medidas_diametro</code> — Diámetro.</li>
+                        <li><code>_marpico_medidas_peso_neto</code> — Peso neto.</li>
+                        <li><code>_marpico_tecnica_marca_codigo</code> — Código de la técnica/marca.</li>
+                        <li><code>_marpico_tecnica_marca_tecnica</code> — Técnica de marcaje.</li>
+                        <li><code>_marpico_tecnica_marca_precio</code> — Precio de la técnica.</li>
+                        <li><code>_marpico_tecnica_marca_num_tintas</code> — Número de tintas.</li>
+                        <li><code>_marpico_tecnica_marca_descripcion</code> — Descripción de la técnica.</li>
+                        </ul>
+
+                        <p style="margin-top:10px; font-size:12px; color:#777;">
+                        Consejo: Para ver o editar estos campos en un producto, activa la opción <em>Campos personalizados</em> en las
+                        “Opciones de pantalla” al editar el producto.
+                        </p>
                     </div>
-                    <div class="marpico-sync-option" data-mode="individual">
-                        <h3>Producto Individual</h3>
-                        <p>Sincroniza un producto específico usando su código de familia. Perfecto para actualizaciones puntuales.</p>
                     </div>
-                </div>
             </div>
         </div>
 

@@ -23,7 +23,13 @@
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-/* Layout principal con sidebar */
+#toplevel_page_marpico-sync .wp-menu-image img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  padding-top: 6px;
+}
+
 .marpico-admin-container {
   display: flex;
   min-height: 100vh;
@@ -33,7 +39,6 @@
   max-width: none;
 }
 
-/* Sidebar moderno */
 .marpico-sidebar {
   width: 300px;
   background: var(--marpico-background);

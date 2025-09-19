@@ -69,6 +69,51 @@ class Marpico_Sync {
 
         $parent_id = $product->get_id();
 
+        // === GUARDAR ESPECIFICACIONES DEL PRODUCTO ===
+        // Lista de claves que quieres sincronizar
+        $spec_keys = [
+            'material',
+            'empaque_individual',
+            'empaque_unds_caja',
+            'empaque_unds_medida',
+            'empaque_largo',
+            'empaque_ancho',
+            'empaque_alto',
+            'empaque_peso_neto',
+            'empaque_peso_bruto',
+            'area_impresion',
+            'medidas_largo',
+            'medidas_ancho',
+            'medidas_alto',
+            'medidas_diametro',
+            'medidas_peso_neto',
+            'tecnica_marca_codigo',
+            'tecnica_marca_tecnica',
+            'tecnica_marca_precio',
+            'tecnica_marca_num_tintas',
+            'tecnica_marca_descripcion'
+        ];
+
+        foreach ( $spec_keys as $key ) {
+            if ( array_key_exists( $key, $first ) ) {
+
+                $value = $first[ $key ];
+
+                if ( $value === null || $value === '' ) {
+                    $value = 'N/A';
+                }
+
+                update_post_meta( $product_id, "_marpico_{$key}", $value );
+                $this->log( "GUARDADO: _marpico_{$key} => {$value}" );
+            } else {
+
+                $this->log( "CLAVE AUSENTE: {$key} (no se sobrescribe)" );
+            }
+        }
+
+        //error_log('DEBUG MARPICO KEYS: ' . print_r(array_keys($first), true));
+
+
         // Images: subir solo la primera como featured (solo si no existe)
         if ( ! empty( $gallery_urls ) && is_array( $gallery_urls ) ) {
             $first_url = $gallery_urls[0]; // tomamos solo la primera

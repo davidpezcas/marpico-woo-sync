@@ -21,7 +21,8 @@ class Marpico_Admin {
             'manage_options',
             'marpico-sync',
             [ $this, 'settings_page' ],
-            'dashicons-update',
+            //'dashicons-update',
+            plugin_dir_url(dirname(__FILE__)) . 'assets/icon-128x128.png',
             56
         );
     }
