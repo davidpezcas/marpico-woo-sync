@@ -118,6 +118,14 @@ class BestStock_Sync {
 
         $terms = array_unique(array_filter($terms));
 
+        // Excluir la categoría por defecto "Sin categoría" (slug = 'uncategorized')
+        $uncat_term = get_term_by('slug', 'uncategorized', 'product_cat');
+        if ($uncat_term) {
+            $terms = array_filter($terms, function($term) use ($uncat_term) {
+                return intval($term) !== intval($uncat_term->term_id);
+            });
+        }
+
         // Si hay categorías, asignarlas
         if (!empty($terms)) {
             wp_set_object_terms($product_id, $terms, 'product_cat', true);
