@@ -116,16 +116,19 @@ class BestStock_Sync {
             $terms[] = intval($_POST['wc_category_child']); // hija
         }
 
-        // Eliminar duplicados y vacíos
+        // Limpiar duplicados y vacíos
         $terms = array_unique(array_filter($terms));
 
-        // Excluir la categoría predeterminada de WooCommerce
+        // Excluir la categoría predeterminada
         $default_cat = get_option('default_product_cat');
         $terms = array_diff($terms, [$default_cat]);
 
-        // Si hay categorías, asignarlas
+        // Si hay categorías válidas, asignarlas
         if (!empty($terms)) {
             wp_set_object_terms($product_id, $terms, 'product_cat', true);
+        } else {
+            // Si no hay categorías válidas, limpiar todas menos la predeterminada
+            wp_set_object_terms($product_id, [], 'product_cat', true);
         }
 
 
