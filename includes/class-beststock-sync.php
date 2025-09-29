@@ -116,20 +116,18 @@ class BestStock_Sync {
             $terms[] = intval($_POST['wc_category_child']); // hija
         }
 
+        // Eliminar duplicados y vacíos
         $terms = array_unique(array_filter($terms));
 
-        // Excluir la categoría por defecto "Sin categoría" (slug = 'uncategorized')
-        $uncat_term = get_term_by('slug', 'uncategorized', 'product_cat');
-        if ($uncat_term) {
-            $terms = array_filter($terms, function($term) use ($uncat_term) {
-                return intval($term) !== intval($uncat_term->term_id);
-            });
-        }
+        // Excluir la categoría predeterminada de WooCommerce
+        $default_cat = get_option('default_product_cat');
+        $terms = array_diff($terms, [$default_cat]);
 
         // Si hay categorías, asignarlas
         if (!empty($terms)) {
             wp_set_object_terms($product_id, $terms, 'product_cat', true);
         }
+
 
         // --- Imagen destacada (ONLY basic_picture, NO agregarla a la galería) ---
         if ( ! empty($prod['basic_picture']) ) {
