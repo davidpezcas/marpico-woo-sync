@@ -143,7 +143,6 @@ jQuery(($) => {
             `<span class="marpico-log-error">❌ ${message}</span>`
           );
         }
-
         btn.prop("disabled", false).text("Sincronizar Producto");
       }
     ).fail((xhr) => {
@@ -417,5 +416,198 @@ jQuery(($) => {
     initializeModernInterface();
 
     setInterval(updateStats, 30000);
+  });
+
+  // --- Cargar categorías BestStock al iniciar ---
+  $(document).ready(function () {
+    const $category = $("#beststock-category");
+    const $subcategory = $("#beststock-subcategory");
+
+    // Deshabilitamos select hijo mientras carga
+    $subcategory.prop("disabled", true);
+
+    // Llenamos select de categorías padre desde la API
+    $.post(
+      marpico_ajax.ajax_url,
+      { action: "get_beststock_categories", security: marpico_ajax.nonce },
+      function (resp) {
+        if (resp.success && Array.isArray(resp.data)) {
+          let options = '<option value="">Selecciona categoría</option>';
+          resp.data.forEach((cat) => {
+            // <-- aquí usamos resp.data
+            options += `<option value="${cat.id}" data-sub='${JSON.stringify(
+              cat.subcategorias
+            )}'>${cat.name}</option>`;
+          });
+          $category.html(options).prop("disabled", false);
+        } else {
+          $category.html('<option value="">Error cargando categorías</option>');
+        }
+      }
+    ).fail(function () {
+      $category.html('<option value="">Error cargando categorías</option>');
+    });
+
+    // Cuando cambia categoría principal
+    $category.on("change", function () {
+      const selected = $(this).find("option:selected");
+      let subs = selected.data("sub"); // puede ser undefined
+
+      if (!subs) {
+        subs = []; // default a array vacío si no existe
+      } else if (typeof subs === "string") {
+        try {
+          subs = JSON.parse(subs);
+        } catch (e) {
+          subs = [];
+          console.error("Error parseando subcategorias:", e);
+        }
+      }
+
+      if (subs.length > 0) {
+        let options = '<option value="">Selecciona subcategoría</option>';
+        subs.forEach((sub) => {
+          options += `<option value="${sub.id}">${sub.name}</option>`;
+        });
+        $subcategory.html(options).prop("disabled", false); // show() ya no es necesario
+      } else {
+        $subcategory.html("").prop("disabled", true);
+      }
+    });
+  });
+
+  // --- BestStock: Sincronización por Categoría ---
+  $("#sync-beststock-category").on("click", function (e) {
+    e.preventDefault();
+
+    const categoryId = $("#beststock-subcategory").val().trim(); // usamos subcategoria para la API
+    const parentId = $("#wc-category").val();
+    const childId =
+      $("#wc-category-child").length && $("#wc-category-child").val()
+        ? $("#wc-category-child").val()
+        : "";
+
+    if (!categoryId) {
+      addLogEntry(
+        "Error: Debe ingresar un ID de categoría para BestStock",
+        "error"
+      );
+      return;
+    }
+
+    if (!parentId) {
+      addLogEntry(
+        "Error: Debe seleccionar una categoría de WooCommerce",
+        "error"
+      );
+      return;
+    }
+
+    syncStartTime = Date.now();
+
+    const btn = $(this);
+    btn.prop("disabled", true).text("Sincronizando...");
+
+    addLogEntry(
+      `Solicitando datos de BestStock para categoría ${categoryId} → asignando a WooCommerce categoría ${parentId}`,
+      "info"
+    );
+
+    $.post(
+      marpico_ajax.ajax_url,
+      {
+        action: "beststock_sync_products",
+        security: marpico_ajax.nonce,
+        category_id: categoryId,
+        wc_category_parent: parentId,
+        wc_category_child: childId,
+      },
+      (resp) => {
+        const elapsed = formatElapsedTime(syncStartTime);
+        if (resp.success) {
+          console.log("BestStock → Datos recibidos:", resp.data);
+
+          const message = `Categoria ${categoryId} sincronizada exitosamente en ${elapsed}`;
+
+          addLogEntry(message, "success");
+          $("#api-sync-status").html(
+            `<span class="beststock-log-success">✓ ${message}</span>`
+          );
+          $("#beststock-category").val("");
+          $("#beststock-subcategory")
+            .html('<option value="">Selecciona subcategoría</option>')
+            .prop("disabled", true);
+          $("#wc-category").val("");
+          $("#wc-category-child").remove();
+          updateStats();
+        } else {
+          console.error("BestStock → Error:", resp.data);
+          const message = `Error sincronizando categoria ${categoryId}: ${
+            resp.data || "Error desconocido"
+          }`;
+          addLogEntry(message, "error");
+          $("#api-sync-status").html(
+            `<span class="beststock-log-error">❌ ${message}</span>`
+          );
+          addLogEntry(`Error: ${resp.data || "Error desconocido"}`, "error");
+        }
+        btn.prop("disabled", false).text("Sincronizar Categoría");
+      }
+    ).fail((xhr) => {
+      const elapsed = formatElapsedTime(syncStartTime);
+      const message = `Error de conexión sincronizando categoria ${categoryId} después de ${elapsed}`;
+      console.error("BestStock → Error AJAX", xhr);
+      addLogEntry(message, "error");
+      $("#api-sync-status").html(
+        `<span class="beststock-log-error">❌ ${message}</span>`
+      );
+      //addLogEntry("Error de conexión al sincronizar BestStock", "error");
+      btn.prop("disabled", false).text("Sincronizar Categoría");
+    });
+  });
+
+  // --- Cargar subcategorías dinámicamente ---
+  $("#wc-category").on("change", function () {
+    const parentId = $(this).val();
+    //$("#wc-category-child").remove(); // limpiamos hijos previos
+    console.log("Padre seleccionado:", parentId);
+
+    if (!parentId) {
+      $("#child-category-wrapper").hide(); // esconder bloque completo
+      $("#wc-category-child").empty();
+      return;
+    }
+
+    // Mostrar estado de carga
+    $("#wc-category-child")
+      .html('<option value="">Cargando subcategorías...</option>')
+      .prop("disabled", true);
+    $("#child-category-wrapper").show();
+
+    $.post(
+      marpico_ajax.ajax_url,
+      {
+        action: "get_child_categories",
+        security: marpico_ajax.nonce,
+        parent_id: parentId,
+      },
+      function (resp) {
+        console.log("Respuesta hijos:", resp);
+
+        if (resp.success && resp.data.length > 0) {
+          let options = '<option value="">Selecciona subcategoría</option>';
+          resp.data.forEach((cat) => {
+            options += `<option value="${cat.id}">${cat.name}</option>`;
+          });
+          $("#wc-category-child").html(options).prop("disabled", false);
+          $("#child-category-wrapper").show();
+        } else {
+          $("#child-category-wrapper").hide();
+          $("#wc-category-child").empty();
+        }
+      }
+    ).fail(function (xhr) {
+      console.error("Error AJAX hijos:", xhr);
+    });
   });
 });

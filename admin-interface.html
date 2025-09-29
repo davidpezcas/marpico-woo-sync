@@ -1,10 +1,7 @@
 <!-- Development version -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
-<!-- Production version -->
 <script src="https://unpkg.com/lucide@latest"></script>
 
-<!-- Creando interfaz moderna con sidebar inspirada en dashboards de productividad -->
 <div class="marpico-admin-container">
     <!-- Sidebar moderno -->
     <div class="marpico-sidebar">
@@ -19,7 +16,6 @@
                     </span>
                     <p class="marpico-sidebar-subtitle">Sincronización de productos</p>
                 </div>
-                
             </div>
         </div>
 
@@ -67,17 +63,11 @@
                   </span>
                   Herramientas
                 </h3>
-                <a href="#batch-sync" class="marpico-nav-item" data-section="batch-sync">
+                <a href="#sync" class="marpico-nav-item" data-section="sync">
                     <span class="marpico-nav-icon">
-                      <i data-lucide="package"></i>
+                        <i data-lucide="package"></i>
                     </span>
-                    Sync por Lotes
-                </a>
-                <a href="#individual-sync" class="marpico-nav-item" data-section="individual-sync">
-                    <span class="marpico-nav-icon">
-                      <i data-lucide="database-zap"></i>
-                    </span>
-                    Sync Individual
+                    Sincronización
                 </a>
                 <a href="#logs" class="marpico-nav-item" data-section="logs">
                     <span class="marpico-nav-icon">
@@ -114,9 +104,6 @@
                         Estadísticas
                     </h2>
                 </div>
-                <div class="marpico-stats-grid">
-                    
-                </div>
             </div>
         </div>
 
@@ -133,17 +120,40 @@
                 </div>
                 <form method="post" action="options.php">
                     <?php settings_fields('marpico_sync_settings'); ?>
+                    <?php do_settings_sections('marpico_sync_settings'); ?>
+                    <?php $provider = get_option('marpico_active_provider', 'marpico'); ?>
                     <div class="marpico-form-group">
-                        <label class="marpico-label" for="marpico_api_endpoint">API Endpoint</label>
-                        <input type="url" id="marpico_api_endpoint" name="marpico_api_endpoint" class="marpico-input" 
-                               value="<?php echo esc_attr(get_option('marpico_api_endpoint', 'https://apipromocionales.marpico.co/api/inventarios')); ?>" 
-                               placeholder="https://api.ejemplo.com/productos">
+                        <label for="marpico_active_provider">Marca / Proveedor</label>
+                        <select id="marpico_active_provider" name="marpico_active_provider">
+                            <option value="marpico" <?php selected( $provider, 'marpico' ); ?>>Marpico</option>
+                            <option value="beststock" <?php selected( $provider, 'beststock' ); ?>>BestStock</option>
+                        </select>
                     </div>
-                    <div class="marpico-form-group">
-                        <label class="marpico-label" for="marpico_api_token">API Token</label>
-                        <input type="password" id="marpico_api_token" name="marpico_api_token" class="marpico-input" 
-                               value="<?php echo esc_attr(get_option('marpico_api_token', '')); ?>" 
-                               placeholder="Ingrese su token de API">
+
+                    <!-- Campos para Marpico -->
+                    <div id="marpico-fields" class="provider-fields">
+                        <div class="marpico-form-group">
+                            <label class="marpico-label" for="marpico_api_endpoint">API Endpoint</label>
+                            <input type="url" id="marpico_api_endpoint" name="marpico_api_endpoint" class="marpico-input"
+                                value="<?php echo esc_attr(get_option('marpico_api_endpoint')); ?>"
+                                placeholder="https://api.marpico.com/productos">
+                        </div>
+                        <div class="marpico-form-group">
+                            <label class="marpico-label" for="marpico_api_token">API Token</label>
+                            <input type="password" id="marpico_api_token" name="marpico_api_token" class="marpico-input"
+                                value="<?php echo esc_attr(get_option('marpico_api_token')); ?>"
+                                placeholder="Token de acceso">
+                        </div>
+                    </div>
+
+                    <!-- Campos para BestStock -->
+                    <div id="beststock-fields" class="provider-fields">
+                        <div class="marpico-form-group">
+                            <label class="marpico-label" for="beststock_api_endpoint">API Endpoint</label>
+                            <input type="url" id="beststock_api_endpoint" name="beststock_api_endpoint" class="marpico-input"
+                                value="<?php echo esc_attr(get_option('beststock_api_endpoint')); ?>"
+                                placeholder="https://api.beststock.com/productos">
+                        </div>
                     </div>
                     <?php submit_button('Guardar Configuración', 'marpico-btn marpico-btn-primary', 'submit', false, ['class' => 'marpico-btn marpico-btn-primary']); ?>
                 </form>
@@ -194,50 +204,133 @@
                         “Opciones de pantalla” al editar el producto.
                         </p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-sync" class="marpico-content-section" style="display:none;">
+            <!-- ===== Sincronización Marpico ===== -->
+            <div id="sync-marpico" class="sync-content">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn" data-tab="batch">Sync por Lotes</button>
+                    <button class="tab-btn" data-tab="individual">Sync Individual</button>
+                </div>
+                <!-- Sección: Sincronización por Lotes -->
+                <div id="section-batch-sync" class="marpico-content-section">
+                    <div class="marpico-card">
+                        <div class="marpico-card-header">
+                            <h2 class="marpico-card-title">
+                                <span class="marpico-card-icon">
+                                <i data-lucide="package"></i>
+                                </span>
+                                Sincronización por Lotes
+                            </h2>
+                        </div>
+                        <p>Este proceso sincronizará todos los productos disponibles en la API externa con tu tienda WooCommerce en lotes de 20 productos.</p>
+                        <button id="sync-products-batch" class="marpico-btn marpico-btn-primary">
+                            Iniciar Sincronización por Lotes
+                        </button>
+                        <div id="marpico-sync-status-batch" style="margin-top: 24px;"></div>
                     </div>
+                </div>
+                <!-- Sección: Sincronización Individual -->
+                <div id="section-individual-sync" class="marpico-content-section" style="display:none;">
+                    <div class="marpico-card">
+                        <div class="marpico-card-header">
+                            <h2 class="marpico-card-title">
+                                <span class="marpico-card-icon">
+                                <i data-lucide="database-zap"></i>
+                                </span>
+                                Sincronización Individual
+                            </h2>
+                        </div>
+                        <p>Sincroniza un producto específico usando su código de familia. Perfecto para actualizaciones puntuales.</p>
+                        <div class="marpico-form-group">
+                            <label class="marpico-label" for="product-code-input">Código de Producto</label>
+                            <input type="text" id="product-code-input" class="marpico-input" placeholder="Ej: VI2094">
+                        </div>
+                        <button id="sync-individual-product" class="marpico-btn marpico-btn-secondary">
+                            Sincronizar Producto
+                        </button>
+                        <div id="individual-sync-status" style="margin-top: 24px;"></div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Sección: Sincronización por Lotes -->
-        <div id="section-batch-sync" class="marpico-content-section" style="display: none;">
-            <div class="marpico-card">
-                <div class="marpico-card-header">
-                    <h2 class="marpico-card-title">
-                        <span class="marpico-card-icon">
-                            <i data-lucide="package"></i>
-                        </span>
-                        Sincronización por Lotes
-                    </h2>
-                </div>
-                <p>Este proceso sincronizará todos los productos disponibles en la API externa con tu tienda WooCommerce en lotes de 20 productos.</p>
-                <button id="sync-products-batch" class="marpico-btn marpico-btn-primary">
-                    Iniciar Sincronización por Lotes
-                </button>
-                <div id="marpico-sync-status-batch" style="margin-top: 24px;"></div>
-            </div>
-        </div>
+            <!-- ===== Sincronización Beststock ===== -->
+            <div id="sync-beststock" class="sync-content" style="display:none;">
+                <div class="marpico-card">
+                    <div class="marpico-card-header">
+                        <h2 class="marpico-card-title">
+                            <span class="marpico-card-icon">
+                                <i data-lucide="database"></i>
+                            </span>
+                            Sincronización BestStock
+                        </h2>
+                    </div>
+                    <p>Ingresa el ID de la categoría de BestStock que deseas sincronizar.</p>
+                    <!-- <div class="marpico-form-group">
+                        <label class="marpico-label" for="beststock-category-id">ID de Categoría</label>
+                        <input 
+                            type="text" 
+                            id="beststock-category"
+                            class="marpico-input" 
+                            placeholder="Ej: 133">
+                            
+                    </div> -->
 
-        <!-- Sección: Sincronización Individual -->
-        <div id="section-individual-sync" class="marpico-content-section" style="display: none;">
-            <div class="marpico-card">
-                <div class="marpico-card-header">
-                    <h2 class="marpico-card-title">
-                        <span class="marpico-card-icon">
-                            <i data-lucide="database-zap"></i>
-                        </span>
-                        Sincronización Individual
-                    </h2>
+                    <!-- Select Categorías BestStock (Padre) -->
+                    <div class="marpico-form-group">
+                        <label class="marpico-label" for="beststock-category">Categoría BestStock</label>
+                        <select id="beststock-category" class="marpico-input">
+                            <option value="">Cargando categorías...</option>
+                        </select>
+                    </div>
+
+                    <!-- Select Subcategorías BestStock (Hijo) -->
+                    <div class="marpico-form-group" id="beststock-subcategory-wrapper">
+                        <label class="marpico-label" for="beststock-subcategory">Subcategoría BestStock</label>
+                        <select id="beststock-subcategory" class="marpico-input" disabled>
+                            <option value="">Selecciona una subcategoría</option>
+                        </select>
+                    </div>
+
+                    <!-- Select Categorías WooCommerce -->
+                    <div class="marpico-form-group">
+                        <label class="marpico-label" for="wc-category">Categoría en WooCommerce</label>
+                        <select id="wc-category" class="marpico-input">
+                            <option value="">Selecciona una categoría</option> <!-- opción por defecto -->
+                            <?php
+                                // Obtener solo categorías padre de producto en WooCommerce
+                                $product_categories = get_terms( array(
+                                    'taxonomy'   => 'product_cat',
+                                    'hide_empty' => false,
+                                    'parent'     => 0, // Solo padres
+                                ) );
+
+                                if ( ! empty( $product_categories ) && ! is_wp_error( $product_categories ) ) {
+                                    foreach ( $product_categories as $cat ) {
+                                        echo '<option value="' . esc_attr( $cat->term_id ) . '">' . esc_html( $cat->name ) . '</option>';
+                                    }
+                                }
+                            ?>
+                        </select>
+                    </div>
+
+
+                    <div class="marpico-form-group" id="child-category-wrapper" style="display:none;">
+                        <label class="marpico-label" for="wc-category-child">Categoría Hija (WooCommerce)</label>
+                        <select id="wc-category-child" class="marpico-input">
+                            <option value="">Selecciona una subcategoría</option>
+                        </select>
+                    </div>
+
+                    <button id="sync-beststock-category" class="marpico-btn marpico-btn-primary">
+                        Sincronizar Categoría
+                    </button>
+                    <div id="api-sync-status" style="margin-top: 24px;"></div>
                 </div>
-                <p>Sincroniza un producto específico usando su código de familia. Perfecto para actualizaciones puntuales.</p>
-                <div class="marpico-form-group">
-                    <label class="marpico-label" for="product-code-input">Código de Producto</label>
-                    <input type="text" id="product-code-input" class="marpico-input" 
-                           placeholder="Ej: VI2094">
-                </div>
-                <button id="sync-individual-product" class="marpico-btn marpico-btn-secondary">
-                    Sincronizar Producto
-                </button>
-                <div id="individual-sync-status" style="margin-top: 24px;"></div>
             </div>
         </div>
 
@@ -290,25 +383,9 @@
     </div>
 </div>
 
-<!-- Script de navegación y funcionalidad -->
 <script>
 jQuery(document).ready(function($) {
-    // Navegación del sidebar
-    $('.marpico-nav-item').on('click', function(e) {
-        e.preventDefault();
-        
-        // Remover clase active de todos los items
-        $('.marpico-nav-item').removeClass('active');
-        $(this).addClass('active');
-        
-        // Ocultar todas las secciones
-        $('.marpico-content-section').hide();
-        
-        // Mostrar la sección seleccionada
-        const section = $(this).data('section');
-        $('#section-' + section).show();
-    });
-    
+
     // Cargar estadísticas al iniciar
     loadSystemStats();
     
@@ -330,6 +407,7 @@ jQuery(document).ready(function($) {
     setInterval(loadSystemStats, 30000);
 });
 </script>
+
 <script>
     lucide.createIcons({
       attrs: {
@@ -338,3 +416,65 @@ jQuery(document).ready(function($) {
       nameAttr: 'data-lucide', // attribute for the icon name.
     });
   </script>
+
+<script>
+jQuery(document).ready(function($) {
+  // --- Sidebar nav (mantener tu comportamiento actual) ---
+  $('.marpico-nav-item').on('click', function(e) {
+    e.preventDefault();
+    $('.marpico-nav-item').removeClass('active');
+    $(this).addClass('active');
+    $('.marpico-content-section').hide();
+    const section = $(this).data('section');
+    $('#section-' + section).show();
+  });
+
+  // --- Toggle provider fields (al cambiar en el select) ---
+  function toggleProviderFields() {
+    const provider = $('#marpico_active_provider').val();
+    $('.provider-fields').hide();
+    if (provider === 'marpico') {
+      $('#marpico-fields').show();
+    } else if (provider === 'beststock') {
+      $('#beststock-fields').show();
+    }
+  }
+  // inicial
+  toggleProviderFields();
+  // on change (si el usuario cambia antes de guardar)
+  $('#marpico_active_provider').on('change', toggleProviderFields);
+
+  // --- Mostrar la sección de sincronización adecuada según la opción guardada ---
+  const activeProvider = "<?php echo esc_js( get_option('marpico_active_provider', 'marpico') ); ?>";
+  // Mostrar el bloque sync global
+  $('#section-sync').hide(); // ocultar por defecto
+  // Asegúrate que el contenedor de sync existe
+  if ($('#section-sync').length) {
+    // Mostrar la parte de Marpico o Beststock
+    if (activeProvider === 'marpico') {
+      $('#sync-marpico').show();
+      $('#sync-beststock').hide();
+    } else {
+      $('#sync-marpico').hide();
+      $('#sync-beststock').show();
+    }
+    // Si viniste desde el sidebar, el click ya mostrará section-sync
+    // (no forzamos mostrar here para respetar la navegación)
+  }
+
+  // --- Tabs inside Marpico (batch / individual) ---
+  $('.tab-btn').on('click', function() {
+    const tab = $(this).data('tab');
+    $('#section-batch-sync').hide();
+    $('#section-individual-sync').hide();
+    if (tab === 'batch') $('#section-batch-sync').show();
+    if (tab === 'individual') $('#section-individual-sync').show();
+  });
+
+  // Mostrar por defecto batch si estamos con Marpico
+  if (activeProvider === 'marpico') {
+    $('#section-batch-sync').show();
+    $('#section-individual-sync').hide();
+  }
+});
+</script>

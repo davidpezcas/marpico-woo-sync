@@ -36,7 +36,7 @@ class Marpico_Client {
         error_log("Respuesta: " . print_r($res, true));
 
         if ( is_wp_error( $res ) ) {
-            error_log("❌ Error wp_remote_get: " . $res->get_error_message());
+            error_log("Error wp_remote_get: " . $res->get_error_message());
             return $res;
         }
 

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Marpico Woo Sync
  * Description: Sincroniza productos, categorías y etiquetas(temas) desde la API de Marpico hacia WooCommerce.
- * Version: 1.0.6
+ * Version: 1.0.7
  * Author: David Perez
  * Author URI:  https://github.com/davidpezcas
  * Plugin URI:  https://github.com/davidpezcas/marpico-woo-sync
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 // Definir constante de versión
 if ( ! defined( 'MARPICO_SYNC_VERSION' ) ) {
-    define( 'MARPICO_SYNC_VERSION', '1.0.6' );
+    define( 'MARPICO_SYNC_VERSION', '1.0.7' );
 }
 
 define( 'MARPICO_WOO_SYNC_PATH', plugin_dir_path( __FILE__ ) );
@@ -22,6 +22,8 @@ define( 'MARPICO_WOO_SYNC_URL',  plugin_dir_url( __FILE__ ) );
 // includes
 require_once MARPICO_WOO_SYNC_PATH . 'includes/class-marpico-client.php';
 require_once MARPICO_WOO_SYNC_PATH . 'includes/class-marpico-sync.php';
+require_once MARPICO_WOO_SYNC_PATH . 'includes/class-beststock-client.php';
+require_once MARPICO_WOO_SYNC_PATH . 'includes/class-beststock-sync.php';
 require_once MARPICO_WOO_SYNC_PATH . 'includes/class-marpico-admin.php';
 require_once MARPICO_WOO_SYNC_PATH . 'includes/class-attribute-helper.php';
 
