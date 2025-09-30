@@ -476,7 +476,7 @@ jQuery(($) => {
     });
   });
 
-  // --- BestStock: Sincronización por Categoría en Batches ---
+  // --- Sincronización por Categoría en Batches ---
   $("#sync-beststock-category").on("click", function (e) {
     e.preventDefault();
 

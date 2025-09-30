@@ -235,7 +235,7 @@ class Marpico_Admin {
 
         $sync = new BestStock_Sync();
         $res = $sync->sync_products_batch($category_id, $offset, $batch_size);
-
+        //errror
         if ( is_wp_error( $res ) ) {
             wp_send_json_error( $res->get_error_message() );
         }
