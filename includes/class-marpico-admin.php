@@ -19,6 +19,9 @@ class Marpico_Admin {
 
         add_action( 'wp_ajax_get_beststock_categories', [$this, 'ajax_get_beststock_categories'] );
 
+        add_action( 'wp_ajax_beststock_sync_batch', [ $this, 'ajax_beststock_sync_batch' ] );
+
+
     }
 
     public function add_menu() {
@@ -172,8 +175,6 @@ class Marpico_Admin {
         wp_send_json_success($result);
     }
 
-
-
     public function ajax_beststock_sync_products() {
         if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'No permission' );
             check_ajax_referer( 'marpico_sync_nonce', 'security' );
@@ -224,6 +225,29 @@ class Marpico_Admin {
 
         wp_send_json_success($result);
     }
+
+    public function ajax_beststock_sync_batch() {
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'No permission' );
+        check_ajax_referer( 'marpico_sync_nonce', 'security' );
+
+        $offset = intval( $_POST['offset'] ?? 0 );
+        $batch_size = intval( $_POST['batch_size'] ?? 5 );
+        $category_id = intval( $_POST['category_id'] ?? 0 );
+
+        if ( ! $category_id ) {
+            wp_send_json_error('Falta category_id');
+        }
+
+        $sync = new BestStock_Sync();
+        $res = $sync->sync_products_batch( $category_id, $offset, $batch_size );
+
+        if ( is_wp_error( $res ) ) {
+            wp_send_json_error( $res->get_error_message() );
+        }
+
+        wp_send_json_success( $res );
+    }
+
 
 
     private function log_sync_event( $message, $type = 'info' ) {

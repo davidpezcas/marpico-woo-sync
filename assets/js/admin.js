@@ -476,11 +476,11 @@ jQuery(($) => {
     });
   });
 
-  // --- BestStock: Sincronización por Categoría ---
+  // --- BestStock: Sincronización por Categoría en Batches ---
   $("#sync-beststock-category").on("click", function (e) {
     e.preventDefault();
 
-    const categoryId = $("#beststock-subcategory").val().trim(); // usamos subcategoria para la API
+    const categoryId = $("#beststock-subcategory").val().trim();
     const parentId = $("#wc-category").val();
     const childId =
       $("#wc-category-child").length && $("#wc-category-child").val()
@@ -509,61 +509,81 @@ jQuery(($) => {
     btn.prop("disabled", true).text("Sincronizando...");
 
     addLogEntry(
-      `Solicitando datos de BestStock para categoría ${categoryId} → asignando a WooCommerce categoría ${parentId}`,
+      `Iniciando sincronización de categoría ${categoryId} → WooCommerce categoría ${parentId}`,
       "info"
     );
 
-    $.post(
-      marpico_ajax.ajax_url,
-      {
-        action: "beststock_sync_products",
-        security: marpico_ajax.nonce,
-        category_id: categoryId,
-        wc_category_parent: parentId,
-        wc_category_child: childId,
-      },
-      (resp) => {
-        const elapsed = formatElapsedTime(syncStartTime);
-        if (resp.success) {
-          console.log("BestStock → Datos recibidos:", resp.data);
+    let offset = 0;
+    const batchSize = 5; // número de productos por lote
 
-          const message = `Categoria ${categoryId} sincronizada exitosamente en ${elapsed}`;
+    function processBatch() {
+      $.post(
+        marpico_ajax.ajax_url,
+        {
+          action: "beststock_sync_batch",
+          security: marpico_ajax.nonce,
+          category_id: categoryId,
+          offset: offset,
+          batch_size: batchSize,
+          wc_category_parent: parentId,
+          wc_category_child: childId,
+        },
+        (resp) => {
+          if (resp.success) {
+            const data = resp.data || {};
+            const processed = data.processed || 0;
+            const total = data.total || 0;
 
-          addLogEntry(message, "success");
-          $("#api-sync-status").html(
-            `<span class="beststock-log-success">✓ ${message}</span>`
-          );
-          $("#beststock-category").val("");
-          $("#beststock-subcategory")
-            .html('<option value="">Selecciona subcategoría</option>')
-            .prop("disabled", true);
-          $("#wc-category").val("");
-          $("#wc-category-child").remove();
-          updateStats();
-        } else {
-          console.error("BestStock → Error:", resp.data);
-          const message = `Error sincronizando categoria ${categoryId}: ${
-            resp.data || "Error desconocido"
-          }`;
-          addLogEntry(message, "error");
-          $("#api-sync-status").html(
-            `<span class="beststock-log-error">❌ ${message}</span>`
-          );
-          addLogEntry(`Error: ${resp.data || "Error desconocido"}`, "error");
+            addLogEntry(
+              `Lote procesado: ${processed} productos (offset ${offset})`,
+              "info"
+            );
+
+            offset += batchSize;
+
+            if (offset < total) {
+              processBatch(); // siguiente lote
+            } else {
+              const elapsed = formatElapsedTime(syncStartTime);
+              const message = `Categoría ${categoryId} sincronizada exitosamente en ${elapsed}`;
+              addLogEntry(message, "success");
+              $("#api-sync-status").html(
+                `<span class="beststock-log-success">✓ ${message}</span>`
+              );
+              $("#beststock-category").val("");
+              $("#beststock-subcategory")
+                .html('<option value="">Selecciona subcategoría</option>')
+                .prop("disabled", true);
+              $("#wc-category").val("");
+              $("#wc-category-child").remove();
+              updateStats();
+              btn.prop("disabled", false).text("Sincronizar Categoría");
+            }
+          } else {
+            const message = `Error sincronizando categoría ${categoryId}: ${
+              resp.data || "Error desconocido"
+            }`;
+            addLogEntry(message, "error");
+            $("#api-sync-status").html(
+              `<span class="beststock-log-error">❌ ${message}</span>`
+            );
+            btn.prop("disabled", false).text("Sincronizar Categoría");
+          }
         }
+      ).fail((xhr) => {
+        const elapsed = formatElapsedTime(syncStartTime);
+        const message = `Error de conexión sincronizando categoría ${categoryId} después de ${elapsed}`;
+        console.error("BestStock → Error AJAX", xhr);
+        addLogEntry(message, "error");
+        $("#api-sync-status").html(
+          `<span class="beststock-log-error">❌ ${message}</span>`
+        );
         btn.prop("disabled", false).text("Sincronizar Categoría");
-      }
-    ).fail((xhr) => {
-      const elapsed = formatElapsedTime(syncStartTime);
-      const message = `Error de conexión sincronizando categoria ${categoryId} después de ${elapsed}`;
-      console.error("BestStock → Error AJAX", xhr);
-      addLogEntry(message, "error");
-      $("#api-sync-status").html(
-        `<span class="beststock-log-error">❌ ${message}</span>`
-      );
-      //addLogEntry("Error de conexión al sincronizar BestStock", "error");
-      btn.prop("disabled", false).text("Sincronizar Categoría");
-    });
+      });
+    }
+
+    // arrancamos con el primer lote
+    processBatch();
   });
 
   // --- Cargar subcategorías dinámicamente ---

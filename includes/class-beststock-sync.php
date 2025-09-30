@@ -66,7 +66,57 @@ class BestStock_Sync {
     }
 
 
-    private function create_or_update_product($prod, $wc_category = 0) {
+    public function sync_products_batch($category_id, $offset = 0, $batch_size = 5, $wc_categories = []) {
+        // Obtener todos los productos de la categoría desde la API
+        $products = $this->client->get_products_by_category($category_id);
+
+        if (is_wp_error($products)) {
+            return $products;
+        }
+
+        if (empty($products) || !is_array($products)) {
+            return new WP_Error('no_data', 'No se encontraron productos para la categoría ' . $category_id);
+        }
+
+        $total = count($products);
+
+        // Cortar el array al lote actual
+        $batch = array_slice($products, $offset, $batch_size);
+
+        $processed = 0;
+
+        foreach ($batch as $prod) {
+            try {
+                $existing = wc_get_product_id_by_sku($prod['id']);
+                if ($existing) {
+                    $product = wc_get_product($existing);
+                    error_log("Producto existente actualizado: {$prod['name']} (Woo ID: $existing)");
+                } else {
+                    error_log("Creando producto nuevo: {$prod['name']}");
+                }
+
+                // Crear o actualizar producto en WooCommerce
+                $this->create_or_update_product($prod, $wc_categories);
+                $processed++;
+            } catch (Exception $e) {
+                error_log("Error guardando producto {$prod['name']}: " . $e->getMessage());
+            }
+        }
+
+        $next_offset = $offset + $batch_size;
+        $has_more = $next_offset < $total;
+
+        return [
+            'processed'   => $processed,
+            'total'       => $total,
+            'offset'      => $offset,
+            'next_offset' => $next_offset,
+            'has_more'    => $has_more,
+        ];
+    }
+
+
+    private function create_or_update_product($prod) {
         if ( ! class_exists('WC_Product') ) return false;
 
         // --- Verificar si ya existe producto por ID externo ---
@@ -105,32 +155,38 @@ class BestStock_Sync {
         // Guardar ID externo
         update_post_meta($product_id, '_beststock_id', $prod['id']);
         
-        // --- Asignar categorías padre + hija ---
         $terms = [];
 
         if (!empty($_POST['wc_category_parent'])) {
             $terms[] = intval($_POST['wc_category_parent']); // padre
         }
-
         if (!empty($_POST['wc_category_child'])) {
             $terms[] = intval($_POST['wc_category_child']); // hija
         }
 
-        // Limpiar duplicados y vacíos
+        // Log antes de limpiar
+        error_log('Categorías recibidas (raw) => parent: ' . ($_POST['wc_category_parent'] ?? 'null') . ' | child: ' . ($_POST['wc_category_child'] ?? 'null'));
+        error_log('Terms iniciales => ' . print_r($terms, true));
+
         $terms = array_unique(array_filter($terms));
 
-        // Excluir la categoría predeterminada
+        // Quitar la categoría por defecto (Uncategorized)
         $default_cat = get_option('default_product_cat');
         $terms = array_diff($terms, [$default_cat]);
 
-        // Si hay categorías válidas, asignarlas
-        if (!empty($terms)) {
-            wp_set_object_terms($product_id, $terms, 'product_cat', true);
-        } else {
-            // Si no hay categorías válidas, limpiar todas menos la predeterminada
-            wp_set_object_terms($product_id, [], 'product_cat', true);
-        }
+        // Log después de limpiar
+        error_log('Default category ID => ' . $default_cat);
+        error_log('Terms después de limpiar => ' . print_r($terms, true));
 
+        if (!empty($terms)) {
+            // Reemplazar todas las categorías
+            wp_set_object_terms($product_id, $terms, 'product_cat', false);
+            error_log('Asignadas categorías al producto ' . $product_id . ' => ' . implode(',', $terms));
+        } else {
+            // Eliminar todas las categorías sin meter Uncategorized
+            wp_set_object_terms($product_id, [], 'product_cat', false);
+            error_log('Sin categorías válidas, se eliminaron categorías en producto ' . $product_id);
+        }
 
         // --- Imagen destacada (ONLY basic_picture, NO agregarla a la galería) ---
         if ( ! empty($prod['basic_picture']) ) {
