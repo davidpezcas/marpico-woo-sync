@@ -508,7 +508,7 @@ jQuery(($) => {
 
     syncStartTime = Date.now();
     let offset = 0;
-    const batchSize = 2; // número de productos por lote
+    const batchSize = 1; // número de productos por lote
     let syncInProgress = true;
     let syncPaused = false;
     let retryCount = 0;
@@ -578,9 +578,10 @@ jQuery(($) => {
             );
 
             // actualizar barra de progreso
-            const percentage = Math.round(
-              (Math.min(offset + batchSize, total) / total) * 100
-            );
+            const percentage = total
+              ? Math.round((Math.min(offset + batchSize, total) / total) * 100)
+              : 100;
+
             $(".marpico-progress-fill").css("width", percentage + "%");
             $(".marpico-progress-text").text(
               `${percentage}% - Procesados ${Math.min(
@@ -625,7 +626,7 @@ jQuery(($) => {
       retryCount++;
 
       if (retryCount <= maxRetries) {
-        const retryDelay = 5000 * retryCount; // 5s, 10s, 15s...
+        const retryDelay = 5000 * Math.pow(2, retryCount - 1);
         addLogEntry(
           `Error: ${errorMsg}. Reintentando lote ${retryCount}/${maxRetries} en ${
             retryDelay / 1000

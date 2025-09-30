@@ -232,7 +232,7 @@ class Marpico_Admin {
         check_ajax_referer( 'marpico_sync_nonce', 'security' );
 
         $offset = intval( $_POST['offset'] ?? 0 );
-        $batch_size = intval( $_POST['batch_size'] ?? 2 );
+        $batch_size = intval( $_POST['batch_size'] ?? 1 );
         $category_id = intval( $_POST['category_id'] ?? 0 );
 
         if ( ! $category_id ) {
