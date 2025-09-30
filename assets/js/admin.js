@@ -508,7 +508,7 @@ jQuery(($) => {
 
     syncStartTime = Date.now();
     let offset = 0;
-    const batchSize = 5; // número de productos por lote
+    const batchSize = 2; // número de productos por lote
     let syncInProgress = true;
     let syncPaused = false;
     let retryCount = 0;
@@ -623,14 +623,19 @@ jQuery(($) => {
 
     function handleBatchError(errorMsg) {
       retryCount++;
+
       if (retryCount <= maxRetries) {
+        const retryDelay = 5000 * retryCount; // 5s, 10s, 15s...
         addLogEntry(
-          `Error: ${errorMsg}. Reintentando lote ${retryCount}/${maxRetries} en 5s`,
+          `Error: ${errorMsg}. Reintentando lote ${retryCount}/${maxRetries} en ${
+            retryDelay / 1000
+          }s`,
           "error"
         );
+
         setTimeout(() => {
           processBatch();
-        }, 5000);
+        }, retryDelay);
       } else {
         syncInProgress = false;
         const elapsed = formatElapsedTime(syncStartTime);

@@ -66,7 +66,13 @@ class Marpico_Admin {
     public function enqueue_assets( $hook ) {
         if ( $hook !== 'toplevel_page_marpico-sync' ) return;
         wp_enqueue_style( 'marpico-admin', MARPICO_WOO_SYNC_URL . 'assets/css/admin-styles.css' );
-        wp_enqueue_script( 'marpico-admin', MARPICO_WOO_SYNC_URL . 'assets/js/admin.js', [ 'jquery' ], false, true );
+        wp_enqueue_script(
+            'marpico-admin',
+            MARPICO_WOO_SYNC_URL . 'assets/js/admin.js',
+            ['jquery'],
+            filemtime( MARPICO_WOO_SYNC_PATH . 'assets/js/admin.js' ), // fuerza actualización
+            true
+        );
         wp_localize_script( 'marpico-admin', 'marpico_ajax', [
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'    => wp_create_nonce( 'marpico_sync_nonce' ),
@@ -171,7 +177,7 @@ class Marpico_Admin {
         wp_send_json_success($result);
     }
 
-    public function ajax_beststock_sync_products() {
+    /* public function ajax_beststock_sync_products() {
         if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'No permission' );
         check_ajax_referer( 'marpico_sync_nonce', 'security' );
 
@@ -193,7 +199,7 @@ class Marpico_Admin {
         //$this->update_individual_sync_stats();
 
         wp_send_json_success( "Productos de Categoria sincronizados correctamente. Post ID: {$res}" );
-    }
+    } */
 
     //función AJAX para obtener categorías hijas
     public function ajax_get_child_categories() {
@@ -226,7 +232,7 @@ class Marpico_Admin {
         check_ajax_referer( 'marpico_sync_nonce', 'security' );
 
         $offset = intval( $_POST['offset'] ?? 0 );
-        $batch_size = intval( $_POST['batch_size'] ?? 5 );
+        $batch_size = intval( $_POST['batch_size'] ?? 2 );
         $category_id = intval( $_POST['category_id'] ?? 0 );
 
         if ( ! $category_id ) {
@@ -234,7 +240,7 @@ class Marpico_Admin {
         }
 
         $sync = new BestStock_Sync();
-        $res = $sync->sync_products_batch($category_id, $offset, $batch_size);
+        $res = $sync->beststock_sync_products_batch($category_id, $offset, $batch_size);
         //errror
         if ( is_wp_error( $res ) ) {
             wp_send_json_error( $res->get_error_message() );

@@ -66,7 +66,7 @@ class BestStock_Sync {
     }
 
     //sincronizacion por lotes
-    public function sync_products_batch($category_id, $offset = 0, $batch_size = 5, $wc_categories = []) {
+    public function beststock_sync_products_batch($category_id, $offset = 0, $batch_size = 2, $wc_categories = []) {
         ini_set('memory_limit', '512M');
         ini_set('max_execution_time', 300);
 
@@ -111,7 +111,8 @@ class BestStock_Sync {
                 $processed++;
 
                 // Pequeña pausa para evitar "Too Many Requests"
-                usleep(300000);
+                usleep(1000000); // 1 segundos entre productos
+
             } catch (Exception $e) {
                 $failed++;
                 $processed++;
