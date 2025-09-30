@@ -67,7 +67,9 @@ class BestStock_Sync {
 
 
     public function sync_products_batch($category_id, $offset = 0, $batch_size = 5, $wc_categories = []) {
-        // Obtener todos los productos de la categoría desde la API
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 300);
+
         $products = $this->client->get_products_by_category($category_id);
 
         if (is_wp_error($products)) {
@@ -79,11 +81,13 @@ class BestStock_Sync {
         }
 
         $total = count($products);
-
-        // Cortar el array al lote actual
         $batch = array_slice($products, $offset, $batch_size);
 
         $processed = 0;
+        $successful = 0;
+        $failed = 0;
+        $results = [];
+        $errors = [];
 
         foreach ($batch as $prod) {
             try {
@@ -95,10 +99,28 @@ class BestStock_Sync {
                     error_log("Creando producto nuevo: {$prod['name']}");
                 }
 
-                // Crear o actualizar producto en WooCommerce
-                $this->create_or_update_product($prod, $wc_categories);
+                $res = $this->create_or_update_product($prod, $wc_categories);
+
+                $results[] = [
+                    'product_name' => $prod['name'],
+                    'status' => 'success',
+                    'product_id' => $existing ?: $res
+                ];
+
+                $successful++;
                 $processed++;
+
+                // Pequeña pausa para evitar "Too Many Requests"
+                usleep(300000);
             } catch (Exception $e) {
+                $failed++;
+                $processed++;
+                $errors[] = "Error guardando producto {$prod['name']}: " . $e->getMessage();
+                $results[] = [
+                    'product_name' => $prod['name'],
+                    'status' => 'error',
+                    'message' => $e->getMessage()
+                ];
                 error_log("Error guardando producto {$prod['name']}: " . $e->getMessage());
             }
         }
@@ -107,11 +129,15 @@ class BestStock_Sync {
         $has_more = $next_offset < $total;
 
         return [
-            'processed'   => $processed,
-            'total'       => $total,
-            'offset'      => $offset,
+            'processed' => $processed,
+            'successful' => $successful,
+            'failed' => $failed,
+            'total' => $total,
+            'offset' => $offset,
             'next_offset' => $next_offset,
-            'has_more'    => $has_more,
+            'has_more' => $has_more,
+            'results' => $results,
+            'errors' => $errors
         ];
     }
 
@@ -360,11 +386,29 @@ class BestStock_Sync {
         require_once ABSPATH . 'wp-admin/includes/media.php';
         require_once ABSPATH . 'wp-admin/includes/image.php';
 
-        // --- Descargar imagen temporal ---
-        $tmp = download_url($url);
+        // --- Descargar imagen temporal con reintentos ---
+        $max_retries = 3;
+        $retry = 0;
+        do {
+            $tmp = download_url($url);
+            if (is_wp_error($tmp)) {
+                $error_msg = $tmp->get_error_message();
+                if (strpos($error_msg, 'Too Many Requests') !== false) {
+                    $retry++;
+                    error_log("⚠ Too Many Requests. Reintentando $retry/$max_retries para $url");
+                    sleep(2); // esperar 2 segundos antes de reintentar
+                } else {
+                    error_log("❌ Error descargando imagen: $url → " . $error_msg);
+                    return 0;
+                }
+            }
+        } while (is_wp_error($tmp) && $retry < $max_retries);
+
         if (is_wp_error($tmp)) {
-            error_log("❌ Error descargando imagen: $url → " . $tmp->get_error_message());
+            error_log("❌ No se pudo descargar la imagen después de $max_retries intentos: $url");
             return 0;
+        } else {
+            error_log("✅ Imagen descargada correctamente en: $tmp (URL: $url)");
         }
 
         // --- Preparar array del archivo ---
@@ -383,6 +427,8 @@ class BestStock_Sync {
             @unlink($tmp);
             error_log("❌ Error procesando imagen: $url → " . $results['error']);
             return 0;
+        } else {
+            error_log("✅ Imagen procesada: " . print_r($results, true));
         }
 
         // --- Crear attachment ---
@@ -411,6 +457,5 @@ class BestStock_Sync {
 
         return 0;
     }
-
 
 }
