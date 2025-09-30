@@ -294,32 +294,37 @@ class BestStock_Sync {
             $variation->set_parent_id($product_id);
         }
 
-        $variation->set_attributes([ $taxonomy => sanitize_title($color['color']) ]);
-        $variation->set_regular_price(0); // precio 0
+        // --- Atributos ---
+        $variation->set_attributes([
+            $taxonomy => sanitize_title($color['color'])
+        ]);
+
+        // --- Precio (dejar siempre en 0, como tu versión original) ---
+        $variation->set_regular_price(0);
 
         // --- Stock ---
         if (isset($color['stock'])) {
             $variation->set_manage_stock(true);
             $variation->set_stock_quantity(intval($color['stock']));
-            $variation->set_stock_status( ( intval($color['stock']) > 0 ) ? 'instock' : 'outofstock' );
+            $variation->set_stock_status((intval($color['stock']) > 0) ? 'instock' : 'outofstock');
+        } else {
+            $variation->set_manage_stock(false);
+            $variation->set_stock_status('instock'); // o 'outofstock', según prefieras
         }
 
         $variation_id = $variation->save();
 
-        // --- Imagen de la variación (usar primera imagen del array) ---
+        // --- Imagen ---
         if (!empty($color['images'][0])) {
             $image_url = $color['images'][0];
 
-            // Reutilizar attachment si ya existe o descargar y adjuntar usando set_product_image
-            // set_product_image busca meta '_beststock_image' antes de descargar, así evita duplicados.
+            // Usar la misma lógica de descarga/asignación que en productos
             $image_id = $this->set_product_image($variation_id, $image_url);
 
-            if ($image_id && ! is_wp_error($image_id)) {
-                // Asegurar que la variación tenga su thumbnail
+            if ($image_id && !is_wp_error($image_id)) {
                 set_post_thumbnail($variation_id, $image_id);
 
-                // Agregar esa imagen a la galería del producto padre (sin duplicados)
-                $gallery_ids = $gallery_ids ? $gallery_ids : [];
+                // Agregar a galería padre
                 $gallery_ids = array_map('intval', $gallery_ids);
                 if (!in_array(intval($image_id), $gallery_ids, true)) {
                     $gallery_ids[] = intval($image_id);
@@ -330,42 +335,82 @@ class BestStock_Sync {
         return $variation_id;
     }
 
-    /**
-     * Setear imagen y devolver ID.
-     */
+
     private function set_product_image($post_id, $url) {
-        require_once(ABSPATH . 'wp-admin/includes/image.php');
-        require_once(ABSPATH . 'wp-admin/includes/file.php');
-        require_once(ABSPATH . 'wp-admin/includes/media.php');
+        if (empty($url)) return 0;
 
-        $existing = get_posts([
-            'post_type' => 'attachment',
-            'meta_key' => '_beststock_image',
-            'meta_value' => $url,
-            'posts_per_page' => 1
-        ]);
+        global $wpdb;
 
-        if ( $existing ) {
-            set_post_thumbnail($post_id, $existing[0]->ID);
-            return $existing[0]->ID;
+        // --- Buscar si ya existe attachment con esa URL ---
+        $existing_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT post_id FROM $wpdb->postmeta 
+            WHERE meta_key = '_beststock_image' 
+            AND meta_value = %s 
+            LIMIT 1",
+            $url
+        ));
+
+        if ($existing_id) {
+            set_post_thumbnail($post_id, (int) $existing_id);
+            return (int) $existing_id;
         }
 
-        $tmp = download_url($url);
-        if ( is_wp_error($tmp) ) return 0;
+        // --- Incluir dependencias ---
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
 
+        // --- Descargar imagen temporal ---
+        $tmp = download_url($url);
+        if (is_wp_error($tmp)) {
+            error_log("❌ Error descargando imagen: $url → " . $tmp->get_error_message());
+            return 0;
+        }
+
+        // --- Preparar array del archivo ---
         $file_array = [
-            'name' => basename($url),
-            'tmp_name' => $tmp
+            'name'     => basename($url),
+            'type'     => mime_content_type($tmp),
+            'tmp_name' => $tmp,
+            'error'    => 0,
+            'size'     => filesize($tmp),
         ];
 
-        $id = media_handle_sideload($file_array, $post_id);
-        if ( ! is_wp_error($id) ) {
-            set_post_thumbnail($post_id, $id);
-            update_post_meta($id, '_beststock_image', $url);
-            return $id;
+        $overrides = ['test_form' => false];
+        $results   = wp_handle_sideload($file_array, $overrides);
+
+        if (isset($results['error'])) {
+            @unlink($tmp);
+            error_log("❌ Error procesando imagen: $url → " . $results['error']);
+            return 0;
+        }
+
+        // --- Crear attachment ---
+        $attachment = [
+            'post_mime_type' => $results['type'],
+            'post_title'     => sanitize_file_name($results['file']),
+            'post_content'   => '',
+            'post_status'    => 'inherit',
+            'guid'           => $url, // guardamos la URL original
+        ];
+
+        $attach_id = wp_insert_attachment($attachment, $results['file'], $post_id);
+
+        if (!is_wp_error($attach_id)) {
+            $attach_data = wp_generate_attachment_metadata($attach_id, $results['file']);
+            wp_update_attachment_metadata($attach_id, $attach_data);
+
+            // --- Asignar como imagen destacada ---
+            set_post_thumbnail($post_id, $attach_id);
+
+            // --- Guardar URL de origen ---
+            update_post_meta($attach_id, '_beststock_image', $url);
+
+            return $attach_id;
         }
 
         return 0;
     }
+
 
 }
