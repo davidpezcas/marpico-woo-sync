@@ -69,6 +69,12 @@
                     </span>
                     Sincronización
                 </a>
+                <a href="#price" class="marpico-nav-item" data-section="price">
+                    <span class="marpico-nav-icon">
+                        <i data-lucide="package"></i>
+                    </span>
+                    Ajuste de precios
+                </a>
                 <a href="#logs" class="marpico-nav-item" data-section="logs">
                     <span class="marpico-nav-icon">
                       <i data-lucide="logs"></i>
@@ -270,15 +276,6 @@
                         </h2>
                     </div>
                     <p>Elije la categoría de BestStock que deseas sincronizar.</p>
-                    <!-- <div class="marpico-form-group">
-                        <label class="marpico-label" for="beststock-category-id">ID de Categoría</label>
-                        <input 
-                            type="text" 
-                            id="beststock-category"
-                            class="marpico-input" 
-                            placeholder="Ej: 133">
-                            
-                    </div> -->
 
                     <!-- Select Categorías BestStock (Padre) -->
                     <div class="marpico-form-group">
@@ -333,6 +330,70 @@
                 </div>
             </div>
         </div>
+
+        <!-- Sección: Price -->
+        <div id="section-price" class="marpico-content-section" style="display: none;">
+            <div class="marpico-card">
+                <div class="marpico-card-header">
+                    <h2 class="marpico-card-title">
+                        <span class="marpico-card-icon">
+                            <i data-lucide="logs"></i>
+                        </span>
+                        Ajuste global de precios
+                    </h2>
+                </div>
+                <div id="ajuste-precios-section" class="marpico-section">
+                    <p>Ingresa el valor a sumar a todos los productos:</p>
+                    <input type="number" id="marpico_precio_incremento" placeholder="Ej. 1500" />
+
+                    <p><strong>Excluir categorías:</strong></p>
+                    <div id="marpico_categoria_excluir">
+                        <?php
+                        $product_categories = get_terms([
+                            'taxonomy'   => 'product_cat',
+                            'hide_empty' => false,
+                            'parent'     => 0, // Solo categorías padre
+                        ]);
+
+                        if (!empty($product_categories) && !is_wp_error($product_categories)) {
+                            foreach ($product_categories as $parent_cat) {
+                                echo '<div class="marpico-cat-parent">';
+                                echo '<label style="display:block; margin-bottom:4px;">
+                                        <input type="checkbox" name="excluded_categories[]" value="' . esc_attr($parent_cat->term_id) . '">
+                                        <strong>' . esc_html($parent_cat->name) . '</strong>
+                                    </label>';
+
+                                // Subcategorías
+                                $child_cats = get_terms([
+                                    'taxonomy'   => 'product_cat',
+                                    'hide_empty' => false,
+                                    'parent'     => $parent_cat->term_id,
+                                ]);
+
+                                if (!empty($child_cats) && !is_wp_error($child_cats)) {
+                                    echo '<div style="margin-left: 20px;">';
+                                    foreach ($child_cats as $child_cat) {
+                                        echo '<label style="display:block;">
+                                                <input type="checkbox" name="excluded_categories[]" value="' . esc_attr($child_cat->term_id) . '">
+                                                ' . esc_html($child_cat->name) . '
+                                            </label>';
+                                    }
+                                    echo '</div>';
+                                }
+
+                                echo '</div>';
+                            }
+                        } else {
+                            echo '<p>No hay categorías disponibles.</p>';
+                        }
+                        ?>
+                    </div>
+
+                    <button id="marpico_aplicar_aumento" class="button button-primary">Aplicar aumento</button>
+                </div>
+            </div>
+        </div>
+
 
         <!-- Sección: Logs -->
         <div id="section-logs" class="marpico-content-section" style="display: none;">

@@ -63,7 +63,7 @@ class BestStock_Client {
 
         $args = [
             'headers' => [ 'Accept' => 'application/json' ],
-            'timeout' => 40,
+            'timeout' => 60,
         ];
 
         $res = wp_remote_get( $url, $args );

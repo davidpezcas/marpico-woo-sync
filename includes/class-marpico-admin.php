@@ -16,13 +16,13 @@ class Marpico_Admin {
         //Nuevo hook para BestStock
         add_action( 'wp_ajax_get_child_categories', [ $this, 'ajax_get_child_categories' ] );
         add_action( 'wp_ajax_beststock_sync_products', [ $this, 'ajax_beststock_sync_products' ] );
-
         add_action( 'wp_ajax_get_beststock_categories', [$this, 'ajax_get_beststock_categories'] );
-
         add_action( 'wp_ajax_beststock_sync_batch', [ $this, 'ajax_beststock_sync_batch' ] );
 
+        add_action( 'wp_ajax_marpico_get_all_product_categories', [ $this, 'ajax_get_all_product_categories' ]);
 
-    }
+
+    }   
 
     public function add_menu() {
         add_menu_page(
@@ -35,6 +35,16 @@ class Marpico_Admin {
             plugin_dir_url(dirname(__FILE__)) . 'assets/icon-128x128.png',
             56
         );
+
+        add_submenu_page(
+            'marpico-sync',
+            'Ajuste de precios',
+            'Ajuste de precios',
+            'manage_options',
+            'marpico-sync#price',
+            [ $this, 'render_price_adjust_page' ]
+        );
+
     }
 
     public function register_settings() {
@@ -81,6 +91,13 @@ class Marpico_Admin {
 
     public function settings_page() {
         include_once( MARPICO_WOO_SYNC_PATH . 'admin-interface.html' );
+    }
+
+
+    public function render_price_adjust_page() {
+        // Redirige automáticamente al dashboard con el hash #price
+        wp_safe_redirect(admin_url('admin.php?page=marpico-sync#price'));
+        exit;
     }
 
     /*** AJAX: sincronizar producto con el código guardado en opciones */
@@ -248,6 +265,35 @@ class Marpico_Admin {
 
         wp_send_json_success($res);
     }
+
+/*     public function ajax_get_all_product_categories() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'No permission' );
+        }
+
+        check_ajax_referer( 'marpico_sync_nonce', 'security' );
+
+        $categories = get_terms([
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => false,
+        ]);
+
+        if ( is_wp_error($categories) ) {
+            wp_send_json_error($categories->get_error_message());
+        }
+
+        $result = [];
+        foreach ($categories as $cat) {
+            $result[] = [
+                'id'   => $cat->term_id,
+                'name' => $cat->name,
+                'parent' => $cat->parent,
+            ];
+        }
+
+        wp_send_json_success($result);
+} */
+
 
 
     private function log_sync_event( $message, $type = 'info' ) {
