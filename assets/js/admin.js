@@ -729,7 +729,7 @@ jQuery(($) => {
         action: "marpico_aplicar_aumento",
         security: marpico_ajax.nonce,
         incremento: incremento,
-        excluded_categories: excluidas,
+        categoriasExcluidas: excluidas,
       },
       beforeSend: function () {
         console.log("Enviando petición AJAX...");

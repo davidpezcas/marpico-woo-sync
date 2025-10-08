@@ -33,12 +33,14 @@ class Marpico_Price {
 
         if (!empty($excluidas)) {
             $args['tax_query'][] = [
-                'taxonomy' => 'product_cat',
-                'field'    => 'term_id',
-                'terms'    => $excluidas,
-                'operator' => 'NOT IN',
+                'taxonomy'         => 'product_cat',
+                'field'            => 'term_id',
+                'terms'            => $excluidas,
+                'operator'         => 'NOT IN',
+                'include_children' => false,
             ];
         }
+
 
         $productos = get_posts($args);
         error_log('Productos encontrados: ' . count($productos));
@@ -47,6 +49,15 @@ class Marpico_Price {
         foreach ($productos as $product_id) {
             $product = wc_get_product($product_id);
             if (!$product) {
+                continue;
+            }
+
+            // Obtener categorías del producto
+            $product_cats = wp_get_post_terms($product_id, 'product_cat', ['fields' => 'ids']);
+
+            // Si el producto tiene alguna categoría excluida, saltarlo
+            if (array_intersect($product_cats, $excluidas)) {
+                error_log("Producto ID {$product_id} excluido por categoría");
                 continue;
             }
 

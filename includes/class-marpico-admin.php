@@ -75,7 +75,14 @@ class Marpico_Admin {
 
     public function enqueue_assets( $hook ) {
         if ( $hook !== 'toplevel_page_marpico-sync' ) return;
-        wp_enqueue_style( 'marpico-admin', MARPICO_WOO_SYNC_URL . 'assets/css/admin-styles.css' );
+        //wp_enqueue_style( 'marpico-admin', MARPICO_WOO_SYNC_URL . 'assets/css/admin-styles.css' );
+        wp_enqueue_style(
+            'marpico-admin',
+            MARPICO_WOO_SYNC_URL . 'assets/css/admin-styles.css',
+            [],
+            filemtime(MARPICO_WOO_SYNC_PATH . 'assets/css/admin-styles.css')
+        );
+
         wp_enqueue_script(
             'marpico-admin',
             MARPICO_WOO_SYNC_URL . 'assets/js/admin.js',
