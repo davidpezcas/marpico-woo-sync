@@ -41,7 +41,7 @@ class Marpico_Sync {
             '11' => 'Navidad',
         ];
 
-        $etiquetas_marpico = [
+        $etiquetas_map = [
             '4'  => 'Netos',
             '37'  => 'Outlet Color',
             '35'  => 'Outlet',
@@ -228,8 +228,7 @@ class Marpico_Sync {
 
         // Asignar etiquetas desde "etiquetas"
         if ( !empty($first['etiquetas']) && is_array($first['etiquetas']) ) {
-            $etiquetas_raw = $first['etiquetas'][0]; // viene como "2|3|6|7|9|10|11"
-            $etiquetas_ids = explode('|', $etiquetas_raw);
+            $etiquetas_ids = array_column($first['etiquetas'], 'id');
 
             $tag_names_etiquetas = [];
             foreach ( $etiquetas_ids as $etiqueta_id ) {
