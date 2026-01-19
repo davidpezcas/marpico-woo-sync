@@ -41,6 +41,12 @@ class Marpico_Sync {
             '11' => 'Navidad',
         ];
 
+        $etiquetas_marpico = [
+            '4'  => 'Netos',
+            '37'  => 'Outlet Color',
+            '35'  => 'Outlet',
+        ];
+
         // Buscar producto existente por meta '_external_family'
         $product_id = $this->find_product_by_family( $family );
 
@@ -217,6 +223,36 @@ class Marpico_Sync {
                 // Asignar etiquetas al producto
                 wp_set_object_terms( $product_id, $tag_names, 'product_tag', true );
                 $this->log( "Etiquetas asignadas al producto {$product_id}: " . implode(', ', $tag_names) );
+            }
+        }
+
+        // Asignar etiquetas desde "etiquetas"
+        if ( !empty($first['etiquetas']) && is_array($first['etiquetas']) ) {
+            $etiquetas_raw = $first['etiquetas'][0]; // viene como "2|3|6|7|9|10|11"
+            $etiquetas_ids = explode('|', $etiquetas_raw);
+
+            $tag_names_etiquetas = [];
+            foreach ( $etiquetas_ids as $etiqueta_id ) {
+                $etiqueta_id = trim($etiqueta_id);
+                if ( isset($etiquetas_map[$etiqueta_id]) ) {
+                    $tag_names_etiquetas[] = $etiquetas_map[$etiqueta_id];
+                }
+            }
+
+            if ( !empty($tag_names_etiquetas) ) {
+                // Filtrar duplicados
+                $tag_names_etiquetas = array_unique($tag_names_etiquetas);
+
+                // Asegurarnos de que las etiquetas existan (si no, crearlas)
+                foreach ( $tag_names_etiquetas as $tag_name_etiqueta ) {
+                    if ( !term_exists( $tag_name_etiqueta, 'product_tag' ) ) {
+                        wp_insert_term( $tag_name_etiqueta, 'product_tag' );
+                    }
+                }
+
+                // Asignar etiquetas al producto
+                wp_set_object_terms( $product_id, $tag_names_etiquetas, 'product_tag', true );
+                $this->log( "Etiquetas asignadas al producto {$product_id}: " . implode(', ', $tag_names_etiquetas) );
             }
         }
 
