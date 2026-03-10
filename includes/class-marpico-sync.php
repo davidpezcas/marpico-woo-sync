@@ -39,6 +39,8 @@ class Marpico_Sync {
             '9'  => 'Amor y Amistad',
             '10' => 'Halloween',
             '11' => 'Navidad',
+            '13' => 'Elecciones',
+            '14' => 'Mundial',
         ];
 
         $etiquetas_map = [
@@ -254,20 +256,6 @@ class Marpico_Sync {
                 $this->log( "Etiquetas asignadas al producto {$product_id}: " . implode(', ', $tag_names_etiquetas) );
             }
         }
-
-
-        // Images: subir primera como featured y el resto como galería
-        /* if ( ! empty( $gallery_urls ) && is_array( $gallery_urls ) ) {
-            $gallery_ids = [];
-            foreach ( $gallery_urls as $i => $url ) {
-                $att_id = $this->download_and_attach_image( $url, $parent_id );
-                if ( $att_id ) {
-                    if ( $i === 0 ) set_post_thumbnail( $parent_id, $att_id );
-                    else $gallery_ids[] = $att_id;
-                }
-            }
-            if ( ! empty( $gallery_ids ) ) update_post_meta( $parent_id, '_product_image_gallery', implode( ',', $gallery_ids ) );
-        } */
 
 
         // Marcar como variable
@@ -584,7 +572,6 @@ class Marpico_Sync {
         return 0;
     }
 
-
     private function remove_product_variations( $product_id ) {
         $args = [
             'post_parent' => $product_id,
@@ -616,9 +603,6 @@ class Marpico_Sync {
         return $media; // attachment_id
     }
 
-    /**
-     * Descarga una imagen desde URL y la adjunta al producto/variación.
-     */
     private function download_and_attach_image( $image_url, $parent_id ) {
         if ( empty( $image_url ) ) return 0;
 
@@ -690,8 +674,7 @@ class Marpico_Sync {
 
         return 0;
     }
-
-
+    
     private function log( $message ) {
         $log = get_option( 'marpico_sync_log', [] );
         $log[] = '[' . current_time('mysql') . '] ' . $message;

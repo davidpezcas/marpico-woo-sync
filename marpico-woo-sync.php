@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Marpico Woo Sync
  * Description: Sincroniza productos, categorías y etiquetas desde API´s externas hacia WooCommerce.
- * Version: 1.0.19
+ * Version: 1.2
  * Author: David Perez
  * Author URI:  https://github.com/davidpezcas
  * Plugin URI:  https://github.com/davidpezcas/marpico-woo-sync
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 // Definir constante de versión
 if ( ! defined( 'MARPICO_SYNC_VERSION' ) ) {
-    define( 'MARPICO_SYNC_VERSION', '1.0.19' );
+    define( 'MARPICO_SYNC_VERSION', '1.2' );
 }
 
 define( 'MARPICO_WOO_SYNC_PATH', plugin_dir_path( __FILE__ ) );
@@ -27,7 +27,8 @@ require_once MARPICO_WOO_SYNC_PATH . 'includes/class-beststock-sync.php';
 require_once MARPICO_WOO_SYNC_PATH . 'includes/class-marpico-admin.php';
 require_once MARPICO_WOO_SYNC_PATH . 'includes/class-attribute-helper.php';
 require_once MARPICO_WOO_SYNC_PATH . 'includes/class-price.php';
-
+require_once MARPICO_WOO_SYNC_PATH . 'includes/class-cdo-client.php';
+require_once MARPICO_WOO_SYNC_PATH . 'includes/class-cdo-sync.php';
 
 if ( is_admin() ) {
     require_once MARPICO_WOO_SYNC_PATH . 'includes/github-updater.php';
@@ -64,3 +65,5 @@ add_action('admin_head', function () {
     </style>
     <?php
 });
+
+

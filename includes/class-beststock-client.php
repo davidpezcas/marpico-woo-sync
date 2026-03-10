@@ -67,10 +67,10 @@ class BestStock_Client {
         ];
 
         $res = wp_remote_get( $url, $args );
-        error_log("Respuesta categorias: " . print_r($res, true));
+        //error_log("Respuesta categorias: " . print_r($res, true));
 
         if ( is_wp_error( $res ) ) {
-            error_log("Error wp_remote_get categorias: " . $res->get_error_message());
+            //error_log("Error wp_remote_get categorias: " . $res->get_error_message());
             return $res;
         }
 

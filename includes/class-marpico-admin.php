@@ -21,6 +21,7 @@ class Marpico_Admin {
 
         add_action( 'wp_ajax_marpico_get_all_product_categories', [ $this, 'ajax_get_all_product_categories' ]);
 
+        add_action( 'wp_ajax_marpico_sync_batch', [$this,'ajax_sync_batch']);
 
     }   
 
@@ -48,7 +49,7 @@ class Marpico_Admin {
     }
 
     public function register_settings() {
-        // El primer parámetro debe coincidir con settings_fields() en la vista
+        // Marpico API
         register_setting( 'marpico_sync_settings', 'marpico_api_endpoint', [
             'type' => 'string',
             'sanitize_callback' => 'esc_url_raw',
@@ -70,7 +71,17 @@ class Marpico_Admin {
             'sanitize_callback' => 'esc_url_raw',
             'default' => '',
         ] );
-
+        // CDO API 
+        register_setting( 'marpico_sync_settings', 'cdo_api_endpoint', [
+            'type' => 'string',
+            'sanitize_callback' => 'esc_url_raw',
+            'default' => '',
+        ] );
+        register_setting( 'marpico_sync_settings', 'cdo_api_token', [
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default' => '',
+        ] );
     }
 
     public function enqueue_assets( $hook ) {
@@ -82,7 +93,6 @@ class Marpico_Admin {
             [],
             filemtime(MARPICO_WOO_SYNC_PATH . 'assets/css/admin-styles.css')
         );
-
         wp_enqueue_script(
             'marpico-admin',
             MARPICO_WOO_SYNC_URL . 'assets/js/admin.js',
@@ -99,7 +109,6 @@ class Marpico_Admin {
     public function settings_page() {
         include_once( MARPICO_WOO_SYNC_PATH . 'admin-interface.html' );
     }
-
 
     public function render_price_adjust_page() {
         // Redirige automáticamente al dashboard con el hash #price
@@ -201,30 +210,6 @@ class Marpico_Admin {
         wp_send_json_success($result);
     }
 
-    /* public function ajax_beststock_sync_products() {
-        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'No permission' );
-        check_ajax_referer( 'marpico_sync_nonce', 'security' );
-
-        $category = sanitize_text_field( $_POST['category_id'] ?? '' );
-            
-        if ( empty( $category ) ) {
-            wp_send_json_error( 'Código de categoria requerido' );
-        }
-
-        $sync = new Beststock_Sync();
-        $res = $sync->ajax_beststock_sync_products( $category );
-
-        if ( is_wp_error( $res ) ) {
-            $this->log_sync_event( "Error sincronizando categoria {$category}: " . $res->get_error_message(), 'error' );
-            wp_send_json_error( $res->get_error_message() );
-        }
-
-        $this->log_sync_event( "Productos de Categoria {$category} sincronizados exitosamente (ID: {$res})", 'success' );
-        //$this->update_individual_sync_stats();
-
-        wp_send_json_success( "Productos de Categoria sincronizados correctamente. Post ID: {$res}" );
-    } */
-
     //función AJAX para obtener categorías hijas
     public function ajax_get_child_categories() {
         if ( ! current_user_can( 'manage_options' ) ) {
@@ -249,7 +234,6 @@ class Marpico_Admin {
         }
         wp_send_json_success($result);
     }
-
     
     public function ajax_beststock_sync_batch() {
         if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'No permission' );
@@ -273,48 +257,42 @@ class Marpico_Admin {
         wp_send_json_success($res);
     }
 
-/*     public function ajax_get_all_product_categories() {
+    public function ajax_sync_batch() {
         if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( 'No permission' );
+            wp_send_json_error('No permission');
         }
 
-        check_ajax_referer( 'marpico_sync_nonce', 'security' );
+        $provider = get_option('marpico_active_provider', 'marpico');
 
-        $categories = get_terms([
-            'taxonomy'   => 'product_cat',
-            'hide_empty' => false,
+        if ($provider === 'marpico') {
+            $sync = new Marpico_Sync();
+        }
+        elseif ($provider === 'beststock') {
+            $sync = new BestStock_Sync();
+        }
+        elseif ($provider === 'cdo') {
+            $sync = new CDO_Sync();
+        }
+
+        $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
+        $batch = isset($_POST['batch_size']) ? intval($_POST['batch_size']) : 10;
+
+        $result = $sync->sync_all_products($offset, $batch);
+
+        wp_send_json_success([
+            'provider' => $provider,
+            'result' => $result
         ]);
-
-        if ( is_wp_error($categories) ) {
-            wp_send_json_error($categories->get_error_message());
-        }
-
-        $result = [];
-        foreach ($categories as $cat) {
-            $result[] = [
-                'id'   => $cat->term_id,
-                'name' => $cat->name,
-                'parent' => $cat->parent,
-            ];
-        }
-
-        wp_send_json_success($result);
-} */
-
-
+    }
 
     private function log_sync_event( $message, $type = 'info' ) {
         $log = get_option( 'marpico_sync_log', [] );
         $timestamp = current_time( 'Y-m-d H:i:s' );
         $log_entry = "[{$timestamp}] {$message}";
-        
         array_unshift( $log, $log_entry );
-        
         if ( count( $log ) > 100 ) {
             $log = array_slice( $log, 0, 100 );
         }
-        
         update_option( 'marpico_sync_log', $log );
     }
-
 }

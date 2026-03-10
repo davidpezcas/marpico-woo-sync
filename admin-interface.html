@@ -18,8 +18,8 @@
                 </div>
             </div>
         </div>
-
-        <nav>
+        <!-- Nav  -->
+        <nav class=¨nav-plugin-api¨>
             <div class="marpico-nav-section">
                 <h3 class="marpico-nav-section-title">
                   <span class="marpico-nav-title-icon">
@@ -83,6 +83,7 @@
                 </a>
             </div>
         </nav>
+        <!-- Footer Side bar  -->
         <div class="marpico-autor">
             <div class="version-marpico-woo">
                 <span class="marpico-version-autor">By David Perez</span>
@@ -127,15 +128,28 @@
                 <form method="post" action="options.php">
                     <?php settings_fields('marpico_sync_settings'); ?>
                     <?php do_settings_sections('marpico_sync_settings'); ?>
-                    <?php $provider = get_option('marpico_active_provider', 'marpico'); ?>
+                    <?php $provider = get_option('marpico_active_provider', 'marpico');
+                        if ($provider === 'marpico') {
+                            error_log('Usando Marpico');
+                            $sync = new Marpico_Sync();
+                        }
+                        elseif ($provider === 'beststock') {
+                            error_log('Usando BestStock');
+                            $sync = new BestStock_Sync();
+                        }
+                        elseif ($provider === 'cdo') {
+                            error_log('Usando CDO');
+                            $sync = new CDO_Sync();
+                        }
+                    ?>
                     <div class="marpico-form-group">
                         <label for="marpico_active_provider">Marca / Proveedor</label>
                         <select id="marpico_active_provider" name="marpico_active_provider">
                             <option value="marpico" <?php selected( $provider, 'marpico' ); ?>>Marpico</option>
                             <option value="beststock" <?php selected( $provider, 'beststock' ); ?>>BestStock</option>
+                            <option value="cdo" <?php selected( $provider, 'cdo' ); ?>>CDO</option>
                         </select>
                     </div>
-
                     <!-- Campos para Marpico -->
                     <div id="marpico-fields" class="provider-fields">
                         <div class="marpico-form-group">
@@ -151,7 +165,6 @@
                                 placeholder="Token de acceso">
                         </div>
                     </div>
-
                     <!-- Campos para BestStock -->
                     <div id="beststock-fields" class="provider-fields">
                         <div class="marpico-form-group">
@@ -159,6 +172,34 @@
                             <input type="url" id="beststock_api_endpoint" name="beststock_api_endpoint" class="marpico-input"
                                 value="<?php echo esc_attr(get_option('beststock_api_endpoint')); ?>"
                                 placeholder="https://api.beststock.com/productos">
+                        </div>
+                    </div>
+                    <!-- Campos para CDO -->
+                    <div id="cdo-fields" class="provider-fields">
+                        <div class="marpico-form-group">
+                            <label class="marpico-label" for="cdo_api_endpoint">API Endpoint</label>
+                            <input
+                                type="url"
+                                id="cdo_api_endpoint"
+                                name="cdo_api_endpoint"
+                                class="marpico-input"
+                                value="<?php echo esc_attr(get_option('cdo_api_endpoint')); ?>"
+                                placeholder="http://api.colombia.cdopromocionales.com/v2/products"
+                            >
+                        </div>
+                        <div class="marpico-form-group">
+                            <label class="marpico-label" for="cdo_api_token">
+                                API Token
+                            </label>
+
+                            <input
+                                type="text"
+                                id="cdo_api_token"
+                                name="cdo_api_token"
+                                class="marpico-input"
+                                value="<?php echo esc_attr(get_option('cdo_api_token')); ?>"
+                                placeholder="Auth Token"
+                            >
                         </div>
                     </div>
                     <?php submit_button('Guardar Configuración', 'marpico-btn marpico-btn-primary', 'submit', false, ['class' => 'marpico-btn marpico-btn-primary']); ?>
@@ -219,8 +260,8 @@
             <div id="sync-marpico" class="sync-content">
                 <!-- Tabs -->
                 <div class="tabs">
-                    <button class="tab-btn" data-tab="batch">Sync por Lotes</button>
-                    <button class="tab-btn" data-tab="individual">Sync Individual</button>
+                    <button data-tab="batch" class="tab-btn marpico-btn marpico-btn-tabs">Sync por Lotes</button>
+                    <button data-tab="individual" class="tab-btn marpico-btn marpico-btn-tabs">Sync Individual</button>
                 </div>
                 <!-- Sección: Sincronización por Lotes -->
                 <div id="section-batch-sync" class="marpico-content-section">
@@ -315,7 +356,6 @@
                         </select>
                     </div>
 
-
                     <div class="marpico-form-group" id="child-category-wrapper" style="display:none;">
                         <label class="marpico-label" for="wc-category-child">Categoría Hija (WooCommerce)</label>
                         <select id="wc-category-child" class="marpico-input">
@@ -327,6 +367,25 @@
                         Sincronizar Categoría
                     </button>
                     <div id="api-sync-status" style="margin-top: 24px;"></div>
+                </div>
+            </div>
+
+            <!-- ===== Sincronización CDO ===== -->
+            <div id="sync-cdo" class="sync-content" style="display:none;">
+                <div class="marpico-card">
+                    <div class="marpico-card-header">
+                        <h2 class="marpico-card-title">
+                            <span class="marpico-card-icon">
+                                <i data-lucide="database"></i>
+                            </span>
+                            Sincronización CDO
+                        </h2>
+                    </div>
+                    <p>Este proceso sincronizará todos los productos disponibles en la API externa con tu tienda WooCommerce en lotes de 10 productos.</p>
+                    <button id="test-provider" class="marpico-btn marpico-btn-primary">
+                            Iniciar Sincronización 
+                    </button>
+                    <div id="cdo-sync-status-batch" style="margin-top: 24px;"></div>
                 </div>
             </div>
         </div>
@@ -393,7 +452,6 @@
                 </div>
             </div>
         </div>
-
 
         <!-- Sección: Logs -->
         <div id="section-logs" class="marpico-content-section" style="display: none;">
@@ -498,6 +556,8 @@ jQuery(document).ready(function($) {
       $('#marpico-fields').show();
     } else if (provider === 'beststock') {
       $('#beststock-fields').show();
+    } else if (provider === 'cdo') {
+      $('#cdo-fields').show();
     }
   }
   // inicial
@@ -513,14 +573,18 @@ jQuery(document).ready(function($) {
   if ($('#section-sync').length) {
     // Mostrar la parte de Marpico o Beststock
     if (activeProvider === 'marpico') {
-      $('#sync-marpico').show();
-      $('#sync-beststock').hide();
-    } else {
-      $('#sync-marpico').hide();
-      $('#sync-beststock').show();
+        $('#sync-marpico').show();
+        $('#sync-beststock').hide();
+        $('#sync-cdo').hide();
+    } else if (activeProvider === 'beststock')  {
+        $('#sync-marpico').hide();
+        $('#sync-beststock').show();
+        $('#sync-cdo').hide();
+    } else if (activeProvider === 'cdo')  {
+        $('#sync-marpico').hide();
+        $('#sync-beststock').hide();
+        $('#sync-cdo').show();
     }
-    // Si viniste desde el sidebar, el click ya mostrará section-sync
-    // (no forzamos mostrar here para respetar la navegación)
   }
 
   // --- Tabs inside Marpico (batch / individual) ---
