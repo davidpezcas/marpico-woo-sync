@@ -357,6 +357,7 @@ class CDO_Sync {
 
         wc_delete_product_transients($product_id);
         WC_Product_Variable::sync($product_id);
+        WC_Product_Variable::sync_stock_status($product_id);
 
     }
 
