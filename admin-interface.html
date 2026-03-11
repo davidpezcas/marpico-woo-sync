@@ -73,7 +73,13 @@
                     <span class="marpico-nav-icon">
                         <i data-lucide="package"></i>
                     </span>
-                    Ajuste de precios
+                    Ajuste precio x (Monto)
+                </a>
+                <a href="#brand" class="marpico-nav-item" data-section="brand">
+                    <span class="marpico-nav-icon">
+                        <i data-lucide="package"></i>
+                    </span>
+                    Ajuste precio x (%)
                 </a>
                 <a href="#logs" class="marpico-nav-item" data-section="logs">
                     <span class="marpico-nav-icon">
@@ -255,7 +261,8 @@
             </div>
         </div>
 
-        <div id="section-sync" class="marpico-content-section" style="display:none;">
+        <!-- Sección: Sincronización -->
+        <div id="section-sync" class="marpico-content-section" style="display: none;">
             <!-- ===== Sincronización Marpico ===== -->
             <div id="sync-marpico" class="sync-content">
                 <!-- Tabs -->
@@ -390,7 +397,7 @@
             </div>
         </div>
 
-        <!-- Sección: Price -->
+        <!-- Sección: Price (Marpico) -->
         <div id="section-price" class="marpico-content-section" style="display: none;">
             <div class="marpico-card">
                 <div class="marpico-card-header">
@@ -398,20 +405,41 @@
                         <span class="marpico-card-icon">
                             <i data-lucide="logs"></i>
                         </span>
-                        Ajuste global de precios
+                        Ajuste global de precios por marca
                     </h2>
                 </div>
                 <div id="ajuste-precios-section" class="marpico-section">
-                    <p>Ingresa el valor a sumar a todos los productos:</p>
-                    <input type="number" id="marpico_precio_incremento" placeholder="Ej. 1500" />
+                    
+                    <!-- Selección de marca -->
+                    <p><strong>Selecciona la marca:</strong></p>
+                    <select id="marpico_marca" style="width: 100%; padding: 4px; margin-bottom: 10px;">
+                        <option value="">-- Selecciona una marca --</option>
+                        <?php
+                        $brands = get_terms([
+                            'taxonomy'   => 'product_brand',
+                            'hide_empty' => false,
+                        ]);
 
+                        if (!empty($brands) && !is_wp_error($brands)) {
+                            foreach ($brands as $brand) {
+                                echo '<option value="' . esc_attr($brand->term_id) . '">' . esc_html($brand->name) . '</option>';
+                            }
+                        }
+                        ?>
+                    </select>
+
+                    <!-- Incremento -->
+                    <p>Ingresa el valor a sumar a los productos seleccionados:</p>
+                    <input type="number" id="marpico_precio_incremento" placeholder="Ej. 1500" style="width: 100%; padding: 4px;" />
+
+                    <!-- Exclusión de categorías -->
                     <p><strong>Excluir categorías:</strong></p>
                     <div id="marpico_categoria_excluir">
                         <?php
                         $product_categories = get_terms([
                             'taxonomy'   => 'product_cat',
                             'hide_empty' => false,
-                            'parent'     => 0, // Solo categorías padre
+                            'parent'     => 0,
                         ]);
 
                         if (!empty($product_categories) && !is_wp_error($product_categories)) {
@@ -448,7 +476,145 @@
                         ?>
                     </div>
 
-                    <button id="marpico_aplicar_aumento" class="button button-primary">Aplicar aumento</button>
+                    <button id="marpico_aplicar_aumento" class="button button-primary" style="margin-top:10px;">Aplicar aumento</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Price Marca -->
+        <div id="section-brand" class="marpico-content-section" style="display: none;">
+            <div class="marpico-card">
+                <div class="marpico-card-header">
+                    <h2 class="marpico-card-title">
+                        <span class="marpico-card-icon">
+                            <i data-lucide="logs"></i>
+                        </span>
+                        Ajuste de precios por marca
+                    </h2>
+                </div>
+
+                <div id="ajuste-precios-marca-section" class="marpico-section">
+
+                    <p>Selecciona la marca:</p>
+
+                    <select id="marpico_marca_select">
+
+                    <?php
+                    $brands = get_terms([
+                        'taxonomy'   => 'product_brand',
+                        'hide_empty' => false
+                    ]);
+
+                    foreach ($brands as $brand) {
+                        echo '<option value="' . esc_attr($brand->term_id) . '">'
+                            . esc_html($brand->name) .
+                            '</option>';
+                    }
+                    ?>
+
+                    </select>
+
+                    <p>Porcentaje de aumento:</p>
+
+                    <input 
+                        type="number" 
+                        id="marpico_porcentaje_incremento" 
+                        placeholder="Ej. 10" 
+                        step="0.1"
+                    />
+
+                    <p style="font-size:12px;color:#666;">
+                        Ejemplo: si ingresas <strong>10</strong> el precio aumentará un <strong>10%</strong>
+                    </p>
+
+                    <p><strong>Excluir marcas:</strong></p>
+
+                    <div id="marpico_marcas_excluir">
+
+                        <?php
+                        $brands = get_terms([
+                            'taxonomy'   => 'product_brand',
+                            'hide_empty' => false
+                        ]);
+
+                        if (!empty($brands) && !is_wp_error($brands)) {
+
+                            foreach ($brands as $brand) {
+
+                                echo '<label style="display:block; margin-bottom:4px;">
+                                        <input type="checkbox" name="excluded_brands[]" value="' . esc_attr($brand->term_id) . '">
+                                        ' . esc_html($brand->name) . '
+                                    </label>';
+
+                            }
+
+                        } else {
+                            echo '<p>No hay marcas disponibles.</p>';
+                        }
+                        ?>
+
+                    </div>
+
+                    <p><strong>Excluir categorías:</strong></p>
+
+                    <div id="marpico_categoria_excluir_brand">
+
+                    <?php
+                    $product_categories = get_terms([
+                        'taxonomy'   => 'product_cat',
+                        'hide_empty' => false,
+                        'parent'     => 0,
+                    ]);
+
+                    if (!empty($product_categories) && !is_wp_error($product_categories)) {
+
+                        foreach ($product_categories as $parent_cat) {
+
+                            echo '<div class="marpico-cat-parent">';
+
+                            echo '<label style="display:block; margin-bottom:4px;">
+                                    <input type="checkbox" name="excluded_categories_brand[]" value="' . esc_attr($parent_cat->term_id) . '">
+                                    <strong>' . esc_html($parent_cat->name) . '</strong>
+                                </label>';
+
+                            $child_cats = get_terms([
+                                'taxonomy'   => 'product_cat',
+                                'hide_empty' => false,
+                                'parent'     => $parent_cat->term_id,
+                            ]);
+
+                            if (!empty($child_cats) && !is_wp_error($child_cats)) {
+
+                                echo '<div style="margin-left:20px;">';
+
+                                foreach ($child_cats as $child_cat) {
+
+                                    echo '<label style="display:block;">
+                                            <input type="checkbox" name="excluded_categories_brand[]" value="' . esc_attr($child_cat->term_id) . '">
+                                            ' . esc_html($child_cat->name) . '
+                                        </label>';
+                                }
+
+                                echo '</div>';
+                            }
+
+                            echo '</div>';
+                        }
+
+                    } else {
+
+                        echo '<p>No hay categorías disponibles.</p>';
+
+                    }
+                    ?>
+
+                    </div>
+
+                    <button 
+                        id="marpico_aplicar_aumento_marca" 
+                        class="button button-primary">
+                        Aplicar aumento por marca
+                    </button>
                 </div>
             </div>
         </div>
@@ -497,8 +663,8 @@
                     }
                     ?>
                 </div>
-            </div>
         </div>
+        
     </div>
 </div>
 
@@ -521,7 +687,6 @@ jQuery(document).ready(function($) {
             }
         });
     }
-    
     // Actualizar estadísticas cada 30 segundos
     setInterval(loadSystemStats, 30000);
 });

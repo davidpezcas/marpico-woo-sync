@@ -49,7 +49,7 @@ class Marpico_Sync {
             '35'  => 'Outlet',
         ];
 
-        // Buscar producto existente por meta '_external_family'
+        // Buscar producto existente por meta
         $product_id = $this->find_product_by_family( $family );
 
         if ( $product_id ) {
@@ -119,8 +119,6 @@ class Marpico_Sync {
             }
         }
 
-        //error_log('DEBUG MARPICO KEYS: ' . print_r(array_keys($first), true));
-
 
         // Images: subir solo la primera como featured (solo si no existe)
         if ( ! empty( $gallery_urls ) && is_array( $gallery_urls ) ) {
@@ -152,7 +150,7 @@ class Marpico_Sync {
         if ( $category ) {
             $term_id = 0;
 
-            // Padre: subcategoria_1['nombre_categoria'] (ya en $category)
+            // Padre
             $parent_slug = sanitize_title( $category );
             $parent_term = get_term_by( 'slug', $parent_slug, 'product_cat' );
             if ( ! $parent_term ) {
@@ -164,7 +162,7 @@ class Marpico_Sync {
                 $parent_id = intval( $parent_term->term_id );
             }
 
-            // Hija: subcategoria_1['nombre']
+            // Hija
             $child_name = $first['subcategoria_1']['nombre'] ?? '';
             if ( $child_name ) {
                 $child_slug = sanitize_title( $child_name );
@@ -257,9 +255,11 @@ class Marpico_Sync {
             }
         }
 
-
         // Marcar como variable
         wp_set_object_terms( $product_id, 'variable', 'product_type' );
+
+        // Asignar marca fija
+        $this->assign_fixed_brand_to_product($product_id);
 
         $this->sync_product_variations_optimized( $product_id, $first, $title );
 
@@ -570,6 +570,49 @@ class Marpico_Sync {
         }
 
         return 0;
+    }
+
+    private function assign_fixed_brand_to_product($product_id) {
+
+        error_log('Marca ejecutándose para producto: '.$product_id);
+
+        if(!$product_id) return;
+
+        $taxonomy = 'product_brand';
+        $brand_name = 'Marpico';
+
+        // buscar marca
+        $term = get_term_by('name', $brand_name, $taxonomy);
+
+        // crear si no existe
+        if(!$term){
+
+            $term = wp_insert_term(
+                $brand_name,
+                $taxonomy
+            );
+
+            if(is_wp_error($term)){
+                error_log('Error creando marca: '.$term->get_error_message());
+                return;
+            }
+
+            $term_id = $term['term_id'];
+
+        } else {
+
+            $term_id = $term->term_id;
+
+        }
+
+        // asignar al producto
+        wp_set_object_terms(
+            $product_id,
+            $term_id,
+            $taxonomy,
+            false
+        );
+
     }
 
     private function remove_product_variations( $product_id ) {

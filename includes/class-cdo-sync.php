@@ -99,6 +99,13 @@ class CDO_Sync {
         if ($product_id) {
 
             $wc_product = wc_get_product($product_id);
+            // asegurar que el tipo sea variable si tiene variantes
+            if ($is_variable && $wc_product->get_type() !== 'variable') {
+
+                wp_set_object_terms($product_id, 'variable', 'product_type');
+
+                $wc_product = new WC_Product_Variable($product_id);
+            }
 
         } else {
 
@@ -108,6 +115,7 @@ class CDO_Sync {
 
             $wc_product->set_sku($code);
             $wc_product->set_status('publish');
+            
         }
 
         $wc_product->set_name($name);
@@ -151,6 +159,11 @@ class CDO_Sync {
                 $product,
                 $name
             );
+
+            // recalcular stock del producto variable
+            wc_delete_product_transients($product_id);
+            WC_Product_Variable::sync($product_id);
+            
         }
     }
 
@@ -234,7 +247,7 @@ class CDO_Sync {
                 $variation_data = [
                     'color' => $color_name,
                     'sku'   => $variant['sku'] ?? '',
-                    'price' => $variant['list_price'] ?? '0',
+                    'price' => $variant['net_price'] ?? '0',
                     'stock' => $variant['stock_available'] ?? 0,
                     'image' => $variant['picture']['original'] ?? '',
                 ];
@@ -355,9 +368,16 @@ class CDO_Sync {
             implode(',', $gallery_ids)
         );
 
+        // asegurar estado del producto padre
+        update_post_meta($product_id, '_manage_stock', 'no');
+        update_post_meta($product_id, '_stock_status', 'instock');
+
+        // limpiar cache
         wc_delete_product_transients($product_id);
+        delete_transient('wc_product_children_' . $product_id);
+
+        // sincronizar variaciones  
         WC_Product_Variable::sync($product_id);
-        WC_Product_Variable::sync_stock_status($product_id);
 
     }
 
@@ -406,6 +426,59 @@ class CDO_Sync {
     }
 
     private function sync_product_categories($product_id, $product) {
+
+        $categories = $product['categories'] ?? [];
+        if (empty($categories)) return;
+
+        static $category_cache = [];
+        $term_ids = [];
+
+        foreach ($categories as $cat) {
+
+            // Obtener nombre de la categoría
+            if (is_array($cat) && isset($cat['name'])) {
+                $category_name = trim($cat['name']);
+            } elseif (is_string($cat)) {
+                $category_name = trim($cat);
+            } else {
+                continue; // si no tiene nombre válido, saltar
+            }
+
+            if (!$category_name) continue;
+
+            $category_slug = sanitize_title($category_name);
+
+            // Revisar caché
+            if (isset($category_cache[$category_slug])) {
+                $term_ids[] = $category_cache[$category_slug];
+                continue;
+            }
+
+            // Revisar si existe en WP
+            $term = get_term_by('slug', $category_slug, 'product_cat');
+            if (!$term) {
+                $new_term = wp_insert_term($category_name, 'product_cat', ['slug' => $category_slug]);
+                if (!is_wp_error($new_term)) {
+                    $term_id = $new_term['term_id'];
+                } else {
+                    continue; // si falla la creación, saltar
+                }
+            } else {
+                $term_id = $term->term_id;
+            }
+
+            // Guardar en caché y en lista final
+            $category_cache[$category_slug] = $term_id;
+            $term_ids[] = $term_id;
+        }
+
+        // Asignar todas las categorías al producto
+        if (!empty($term_ids)) {
+            wp_set_object_terms($product_id, $term_ids, 'product_cat');
+        }
+    }
+
+    /* private function sync_product_categories($product_id, $product) {
 
         $categories = $product['categories'] ?? [];
 
@@ -476,7 +549,7 @@ class CDO_Sync {
                 wp_set_object_terms($product_id, [$term_id], 'product_cat');
             }
         }
-    }
+    } */
 
     private function assign_fixed_brand_to_product($product_id) {
 

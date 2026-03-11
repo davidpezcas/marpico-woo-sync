@@ -698,6 +698,7 @@ jQuery(($) => {
     console.log("Botón clickeado");
 
     const incremento = parseFloat($("#marpico_precio_incremento").val());
+    const marca = parseInt($("#marpico_marca").val()); // NUEVO: marca seleccionada
     const excluidas = $("input[name='excluded_categories[]']:checked")
       .map(function () {
         return $(this).val();
@@ -705,10 +706,16 @@ jQuery(($) => {
       .get();
 
     console.log("Incremento:", incremento);
+    console.log("Marca:", marca);
     console.log("Categorías excluidas:", excluidas);
 
     if (!incremento || incremento === 0) {
       alert("Por favor ingresa un valor válido para el aumento.");
+      return;
+    }
+
+    if (!marca || marca === 0) {
+      alert("Por favor selecciona una marca.");
       return;
     }
 
@@ -725,10 +732,11 @@ jQuery(($) => {
       type: "POST",
       dataType: "json",
       data: {
-        action: "marpico_aplicar_aumento",
+        action: "marpico_aplicar_aumento", // coincide con PHP
         security: marpico_ajax.nonce,
-        incremento: incremento,
-        categoriasExcluidas: excluidas,
+        incremento: incremento, // monto fijo
+        marca: marca, // ID de la marca
+        categoriasExcluidas: excluidas, // array de categorías
       },
       beforeSend: function () {
         console.log("Enviando petición AJAX...");
@@ -739,6 +747,7 @@ jQuery(($) => {
 
         // Limpiar campos después de aplicar
         $("#marpico_precio_incremento").val("");
+        $("#marpico_marca").val("");
         $("input[name='excluded_categories[]']").prop("checked", false);
       },
       error: function (xhr, status, error) {
@@ -750,6 +759,91 @@ jQuery(($) => {
         boton.prop("disabled", false).text("Aplicar aumento");
         $("#marpico_status_msg").text("Proceso completado");
         setTimeout(() => $("#marpico_status_msg").fadeOut(), 2000);
+      },
+    });
+  });
+
+  $(document).on("click", "#marpico_aplicar_aumento_marca", function () {
+    console.log("Botón aumento por marca clickeado");
+
+    const porcentaje = parseFloat($("#marpico_porcentaje_incremento").val());
+    const marca = $("#marpico_marca_select").val();
+    const excluidas = $("input[name='excluded_categories_brand[]']:checked")
+      .map(function () {
+        return $(this).val();
+      })
+      .get();
+
+    const excluidasMarcas = $("input[name='excluded_brands[]']:checked")
+      .map(function () {
+        return $(this).val();
+      })
+      .get();
+
+    console.log("Porcentaje:", porcentaje);
+    console.log("Marca:", marca);
+    console.log("Categorías excluidas:", excluidas);
+    console.log("Marcas excluidas:", excluidasMarcas);
+
+    if (!porcentaje || porcentaje === 0) {
+      alert("Por favor ingresa un porcentaje válido.");
+      return;
+    }
+
+    if (!marca) {
+      alert("Debes seleccionar una marca.");
+      return;
+    }
+
+    const boton = $(this);
+    boton.prop("disabled", true).text("Aplicando aumento...");
+
+    $("#marpico_status_msg_marca").remove();
+
+    boton.after(
+      "<p id='marpico_status_msg_marca'>Aplicando aumento por marca, por favor espera...</p>",
+    );
+
+    $.ajax({
+      url: marpico_ajax.ajax_url,
+      type: "POST",
+      dataType: "json",
+      data: {
+        action: "marpico_aplicar_aumento_marca",
+        security: marpico_ajax.nonce,
+        porcentaje: porcentaje,
+        marca: marca,
+        categoriasExcluidas: excluidas,
+        marcasExcluidas: excluidasMarcas,
+      },
+
+      beforeSend: function () {
+        console.log("Enviando petición AJAX aumento por marca...");
+      },
+
+      success: function (response) {
+        console.log("Respuesta del servidor:", response);
+
+        alert("Ajuste por marca completado: " + response.data);
+
+        // limpiar campos
+        $("#marpico_porcentaje_incremento").val("");
+        $("#marpico_marca_select").val("");
+        $("input[name='excluded_categories[]']").prop("checked", false);
+      },
+
+      error: function (xhr, status, error) {
+        console.error("Error en AJAX:", error);
+        console.log(xhr.responseText);
+        alert("Hubo un error al aplicar el aumento.");
+      },
+
+      complete: function () {
+        boton.prop("disabled", false).text("Aplicar aumento por marca");
+
+        $("#marpico_status_msg_marca").text("Proceso completado");
+
+        setTimeout(() => $("#marpico_status_msg_marca").fadeOut(), 2000);
       },
     });
   });
@@ -992,17 +1086,4 @@ jQuery(($) => {
     }
     syncBatch(0);
   });
-
-  /*   $("#test-provider").on("click", function () {
-    $.post(
-      ajaxurl,
-      {
-        action: "marpico_sync_batch",
-      },
-      function (response) {
-        console.log("Proveedor activo: " + response.data.provider);
-        console.log(response);
-      },
-    );
-  }); */
 });
